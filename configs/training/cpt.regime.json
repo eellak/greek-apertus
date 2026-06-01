@@ -1,0 +1,139 @@
+{
+  "schema_version": "2026-06-01",
+  "regime_id": "apertus_8b_greek_cpt",
+  "description": "Hyperparameters for Greek Apertus CPT.",
+  "source_files": {
+    "executable_env": "configs/training/cpt.env",
+    "human_docs": "docs/HYPERPARAMETERS.md",
+    "training_script": "scripts/train/train_apertus_cpt.sbatch"
+  },
+  "model": {
+    "family": "Apertus",
+    "scale": "8B",
+    "num_layers": 32,
+    "hidden_size": 4096,
+    "ffn_hidden_size": 21504,
+    "num_attention_heads": 32,
+    "group_query_attention": true,
+    "num_query_groups": 8,
+    "normalization": "RMSNorm",
+    "activation": "xIELU",
+    "xielu_init_ap": 0.8,
+    "xielu_init_an": 0.8,
+    "qk_layernorm": true,
+    "qknorm_impl": "apex",
+    "disable_bias_linear": true,
+    "untie_embeddings_and_output_weights": true,
+    "make_vocab_size_divisible_by": 128
+  },
+  "positional_geometry": {
+    "max_position_embeddings": 65536,
+    "position_embedding_type": "rope",
+    "rotary_base": 12000000,
+    "use_rope_scaling": true,
+    "rope_scaling_factor": 8.0
+  },
+  "optimizer": {
+    "name": "AdEMAMix",
+    "adam_beta1": 0.9,
+    "adam_beta2": 0.999,
+    "ademamix_beta3": 0.99,
+    "ademamix_alpha": 8.0,
+    "weight_decay": 0.1,
+    "clip_grad": 0.1,
+    "ademamix_beta3_warmup_steps": 287,
+    "ademamix_alpha_warmup_steps": 287
+  },
+  "learning_rate": {
+    "peak_lr": 1.1e-5,
+    "final_lr": 1.1e-5,
+    "schedule_style": "constant",
+    "warmup_init_lr": 1.1e-6,
+    "warmup_tokens": 1200000000,
+    "decay_style_if_wsd": "1-sqrt"
+  },
+  "batching": {
+    "sequence_length": 4096,
+    "micro_batch_size": 2,
+    "global_batch_size_samples": 1024,
+    "global_batch_tokens": 4194304,
+    "train_tokens_default": 5000000000,
+    "save_interval_iters": 119,
+    "eval_interval_iters": 25
+  },
+  "loss": {
+    "objective": "goldfish",
+    "goldfish_k": 50,
+    "goldfish_h": 50
+  },
+  "precision": {
+    "mixed_precision_flag": "bf16",
+    "main_grads_dtype": "fp32"
+  },
+  "data_semantics": {
+    "dataloader_type": "single",
+    "split": "100,0,0",
+    "reset_attention_mask": true,
+    "reset_position_ids": true,
+    "eod_mask_loss": true,
+    "data_seed": 20260528,
+    "dataloader_workers": 4,
+    "dataset_builder_threads": 4
+  },
+  "parallelism": {
+    "tensor_model_parallel_size": 2,
+    "pipeline_model_parallel_size": 1,
+    "default_nodes": 1,
+    "default_gpus_per_node": 4,
+    "world_size_policy": "SLURM_NTASKS must equal nodes * GPUS_PER_NODE for slurm launch mode."
+  },
+  "checkpointing": {
+    "format": "torch_dist",
+    "fully_parallel_load": true,
+    "dist_ckpt_strictness": "assume_ok_unexpected",
+    "override_opt_param_scheduler": true,
+    "initial_cpt_load": {
+      "load_optimizer": false,
+      "load_rng": false
+    },
+    "resume_cpt_load": {
+      "load_optimizer": true,
+      "load_rng": true
+    },
+    "async_save": true,
+    "distributed_timeout_minutes": 60
+  },
+  "runtime_guards": {
+    "wrapper": "scripts/runtime/pretrain_gpt_te_guard.py",
+    "guards": [
+      "Transformer Engine empty extra_state load guard",
+      "numpy product alias compatibility",
+      "CUDA device from LOCAL_RANK",
+      "torch_dist same-topology metadata fallback",
+      "xIELU optimizer audit"
+    ]
+  },
+  "probe_policy": {
+    "notional_train_tokens_must_cover_warmup": true,
+    "short_probe_stop_mechanism": "EXIT_INTERVAL",
+    "reason": "Keep TRAIN_TOKENS >= LR_WARMUP_TOKENS so the scheduler is valid, then stop diagnostic probes early via exit interval."
+  },
+  "preflight_checks": [
+    {
+      "name": "missing_arm_env_var",
+      "check": "ARM must be set to vanilla, extension, or td."
+    },
+    {
+      "name": "slurm_world_size_match",
+      "check": "Submit with --ntasks-per-node equal to GPUS_PER_NODE."
+    },
+    {
+      "name": "warmup_within_train_tokens",
+      "check": "TRAIN_TOKENS must be greater than or equal to LR_WARMUP_TOKENS."
+    },
+    {
+      "name": "rope_geometry_match",
+      "check": "max_position_embeddings = 65536, rotary_base = 12000000, rope scaling factor = 8.0."
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "policy_version": "2026-05-17b",
+  "base_vocab_size": 131072,
+  "rules": [
+    {
+      "class": "latin1_utf8_mojibake",
+      "predicate": "glossary.category == 'mojibake'",
+      "scope": "whole category"
+    },
+    {
+      "class": "mixed_script_artifact",
+      "predicate": "glossary.category == 'mixed_script_token'",
+      "scope": "whole category"
+    },
+    {
+      "class": "pdf_postscript_glyph",
+      "predicate": "glossary.category == 'postscript_glyph'",
+      "scope": "whole category"
+    },
+    {
+      "class": "cleaner_linenewline_placeholder",
+      "predicate": "glossary.category == 'code_identifier'",
+      "scope": "whole category"
+    },
+    {
+      "class": "cleaner_linenewline_bpe_fragment",
+      "predicate": "glossary.category == 'latin_acronym' and decoded in {'LIN','ENEW','LINENEW'}",
+      "scope": "narrow subset"
+    },
+    {
+      "class": "cleaner_extraction_tag",
+      "predicate": "glossary.category == 'latin_fragment' and decoded in {'-missing','-decoded'}",
+      "scope": "narrow subset"
+    }
+  ],
+  "known_counts_at_25600": {
+    "removable_total": 104,
+    "keepable_total": 25496,
+    "removable_by_class": {
+      "mixed_script_artifact": 77,
+      "cleaner_extraction_tag": 2,
+      "cleaner_linenewline_bpe_fragment": 3,
+      "cleaner_linenewline_placeholder": 2,
+      "pdf_postscript_glyph": 14,
+      "latin1_utf8_mojibake": 6
+    }
+  }
+}

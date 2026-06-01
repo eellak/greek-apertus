@@ -1,0 +1,38 @@
+{
+  "base_vocab_size": 131072,
+  "full_added_units": 25600,
+  "full_vocab_size": 156672,
+  "cutoff_grid_added_units": [
+    1024,
+    2048,
+    3072,
+    4096,
+    5120,
+    6144,
+    7168,
+    8192,
+    9216,
+    10240,
+    11264,
+    12288,
+    13312,
+    14336,
+    15360,
+    16384,
+    17408,
+    18432,
+    19456,
+    20480,
+    21504,
+    22528,
+    23552,
+    24576,
+    25600
+  ],
+  "current_recommended_added_units": 11264,
+  "current_recommended_total_vocab_size": 142336,
+  "notes": [
+    "Cutoffs are append-only prefixes on top of the Apertus base vocabulary.",
+    "Bad-token curation is emitted as a manifest and should not silently renumber ids."
+  ]
+}

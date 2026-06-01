@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Training outputs
+runs/
+outputs/
+checkpoints/
+tensorboard/
+triggers/
+*.out
+*.err
+slurm-*.out
+
+# Large model/data artifacts
+*.safetensors
+*.pt
+*.bin
+*.idx
+*.parquet
+*.arrow
+*.jsonl.gz
+
+# Local environment files may contain private cluster paths.
+*.local.env
+dataset_paths.env
+
+# Generated tokenizer reports
+artifacts/
+docs/figures/
