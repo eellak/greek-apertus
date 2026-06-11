@@ -1,0 +1,24 @@
+{
+  "schema_version": "2026-06-01",
+  "name": "apertus_greek_modern_148480",
+  "base_vocab_size": 131072,
+  "added_units": 17408,
+  "total_vocab_size": 148480,
+  "vocab_alignment": 256,
+  "id_ranges": {
+    "base": [0, 131071],
+    "added": [131072, 148479]
+  },
+  "construction": {
+    "type": "continuous_bpe_append_only",
+    "source_full_added_units": 25600,
+    "curation": "skip_removed_tokens_and_backfill",
+    "removed_in_target_scope": 69,
+    "removal_policy": "configs/tokenizer/removal_policy.json"
+  },
+  "notes": [
+    "Apertus base ids are preserved.",
+    "The shipped extension is the cleaned 17,408-unit modern Greek extension.",
+    "The total vocabulary size is divisible by 256."
+  ]
+}

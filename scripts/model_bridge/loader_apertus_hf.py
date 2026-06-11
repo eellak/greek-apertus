@@ -1,11 +1,10 @@
 """HF → Megatron checkpoint loader for Apertus.
 
-Round-2 reviewer flagged that the previous version of this loader emitted
-Apertus-specific tensor keys (`mlp xielu alpha p/n`, `q norm weight`,
-`k norm weight`) that `saver_core.py`'s `check_message()` rejects (the
-saver protocol only consumes standard transformer keys). With default
-checking, conversion fails; with `--no-checking`, those values get
-silently dropped — silent-loss either way.
+`saver_core.py`'s `check_message()` rejects Apertus-specific tensor keys
+(`mlp xielu alpha p/n`, `q norm weight`, `k norm weight`): the saver protocol
+only consumes standard transformer keys. With default checking, conversion
+fails; with `--no-checking`, those values are silently dropped — lossy either
+way.
 
 This loader sends **only** the saver_core-consumed standard keys
 ("word embeddings", "input norm weight", "post norm weight", "qkv weight",
@@ -13,15 +12,13 @@ This loader sends **only** the saver_core-consumed standard keys
 "output layer" / "weight"). It does NOT send xIELU or QK-Norm trained
 tensors — saver_core has no slot for them in its `params_dict` mapping.
 
-**Fidelity caveat (R17 in RISKS.md):** raw saver_core output therefore resets
-xIELU αp / αn and QK-Norm q_norm/k_norm to Megatron defaults. The accepted
-bakeoff/production path must run `patch_apertus_extras.py` after conversion and
-then verify with `verify_hf_roundtrip.py`. The live bakeoff checkpoints use the
-patched `megatron_tp2_r17patched` directories.
+**Fidelity caveat (the verifier calls this R17):** raw saver_core output
+therefore resets xIELU αp / αn and QK-Norm q_norm/k_norm to Megatron defaults.
+Always run `patch_apertus_extras.py` after conversion, then verify with
+`verify_hf_roundtrip.py`.
 
-Tensor-name mapping (HF → Megatron message keys) follows the inverse of
-saver_swissai_hf.py L237-345 (commit c92402e3...). Apertus-specific
-architectural bits we still handle:
+Tensor-name mapping (HF → Megatron message keys) inverts saver_swissai_hf.py
+at the pinned Megatron commit. Apertus-specific architectural bits handled here:
 
   * Bias-free everywhere (Apertus removes all bias terms — no bias keys
     sent; `--disable-bias-linear` declared in Megatron args).
@@ -34,8 +31,7 @@ architectural bits we still handle:
   * RoPE θ = 500,000.
 
 Wires into convert.py via the standard `add_arguments` + `load_checkpoint`
-contract. Drop this file into `swiss-ai/Megatron-LM/tools/checkpoint/`
-(via `install.sh`), then:
+contract. Drop this file into `swiss-ai/Megatron-LM/tools/checkpoint/`, then:
 
     python3 tools/checkpoint/convert.py \\
         --model-type GPT \\
@@ -44,15 +40,14 @@ contract. Drop this file into `swiss-ai/Megatron-LM/tools/checkpoint/`
         --load-dir /path/to/Apertus-8B-2509-hf \\
         --save-dir /path/to/Apertus-8B-2509-megatron \\
         --tokenizer-model /path/to/Apertus-8B-2509-hf \\
-        --bf16
+        --bf16 \\
+        --loader-transformer-impl transformer_engine
 
-Note `--model-type GPT` is REQUIRED by convert.py:114 (reviewer round-2 fix).
+`--model-type GPT` is required (convert.py:114); `--loader-transformer-impl
+transformer_engine` is required because Apertus carries `qknorm_impl=apex`.
 
-[Refs:
- - references/repos/swiss-ai_Megatron-LM/tools/checkpoint/saver_swissai_hf.py
- - references/repos/swiss-ai_Megatron-LM/tools/checkpoint/loader_llama_mistral.py
- - references/repos/swiss-ai_Megatron-LM/tools/checkpoint/saver_core.py L357-443 (check_message)
- - references/papers/apertus_2509.14233.pdf §2.1 (architecture)]
+References: saver_swissai_hf.py and saver_core.py in the swiss-ai/Megatron-LM
+clone; the Apertus technical report (arXiv 2509.14233) §2.1 for the architecture.
 """
 import os
 import sys
@@ -70,8 +65,8 @@ def add_arguments(parser):
                        help="Path to HF tokenizer dir (typically same as --load-dir)")
     group.add_argument('--megatron-path', type=str, default=None,
                        help="Base directory of Megatron-LM-Swiss-AI repo (added to sys.path)")
-    group.add_argument('--make-vocab-size-divisible-by', type=int, default=128,
-                       help="Apertus pretraining used 128 (submit_apertus_8b.sh:L193)")
+    group.add_argument('--make-vocab-size-divisible-by', type=int, default=256,
+                       help="Pad vocabulary rows to a multiple of 256 for Greek Apertus runs.")
     group.add_argument('--loader-transformer-impl', default='local',
                        choices=['local', 'transformer_engine'])
     # convert.py's top-level parser does NOT add --bf16/--fp16 — each loader

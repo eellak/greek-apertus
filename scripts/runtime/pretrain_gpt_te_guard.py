@@ -3,7 +3,7 @@
 
 The HF -> Megatron converted init checkpoints contain empty Transformer Engine
 `_extra_state` tensors. Transformer Engine tries to unpickle those bytes during
-`load_state_dict()` and raises `EOFError`. For this bf16 bakeoff those empty
+`load_state_dict()` and raises `EOFError`. In this bf16 run those empty
 extra states are not carrying FP8 runtime state, so ignore only the truly empty
 case and still raise on non-empty corrupt state.
 """

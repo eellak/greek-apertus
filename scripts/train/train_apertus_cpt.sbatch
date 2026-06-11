@@ -9,12 +9,23 @@
 #SBATCH --no-requeue
 #SBATCH --output=slurm-%x-%j.out
 
+# The #SBATCH directives above are single-node defaults for a direct `sbatch` of
+# this file. submit_cpt_chain.sh overrides --nodes / --ntasks-per-node / --time
+# from cpt.env + the launch profile (e.g. 16 nodes via clariden_16node_cxi.env),
+# so this header is not the multi-node run shape.
 set -euo pipefail
 
 REPO_ROOT="$(cd "${REPO_ROOT_OVERRIDE:-${SLURM_SUBMIT_DIR:-$(pwd)}}" && pwd)"
 TRAIN_CONFIG="${TRAIN_CONFIG:-$REPO_ROOT/configs/training/cpt.env}"
+if [ -n "${LAUNCH_PROFILE_ENV:-}" ]; then
+    case "$LAUNCH_PROFILE_ENV" in
+        /*) ;;
+        *) LAUNCH_PROFILE_ENV="$REPO_ROOT/$LAUNCH_PROFILE_ENV" ;;
+    esac
+    source "$LAUNCH_PROFILE_ENV"
+fi
 source "$TRAIN_CONFIG"
-if [ -n "${DATASET_PATHS_ENV:-}" ]; then
+if [ -n "${DATASET_PATHS_ENV:-}" ] && [ -f "$DATASET_PATHS_ENV" ]; then
     source "$DATASET_PATHS_ENV"
 fi
 
@@ -45,7 +56,7 @@ MODEL_WORLD_SIZE=$(( ${SLURM_NNODES:-$NODES} * GPUS_PER_NODE ))
 
 if (( TRAIN_TOKENS < LR_WARMUP_TOKENS )); then
     echo "ERROR: TRAIN_TOKENS=$TRAIN_TOKENS is smaller than LR_WARMUP_TOKENS=$LR_WARMUP_TOKENS" >&2
-    echo "For probes, keep TRAIN_TOKENS at the notional full target and set EXIT_INTERVAL." >&2
+    echo "For probes, keep TRAIN_TOKENS large enough to cover warmup and set EXIT_INTERVAL." >&2
     exit 2
 fi
 
@@ -65,11 +76,14 @@ echo "ARM=$ARM"
 echo "INIT_CKPT=$INIT_CKPT"
 echo "OUTPUT_DIR=$OUTPUT_DIR"
 echo "TRAIN_CONFIG=$TRAIN_CONFIG"
+echo "LAUNCH_PROFILE_ENV=${LAUNCH_PROFILE_ENV:-<none>}"
 echo "MEGATRON_LM_DIR=$MEGATRON_LM_DIR @ ${MEGATRON_LM_COMMIT:-unknown}"
 echo "tokenizer=$ARM_TOKENIZER"
 echo "data_prefix=$ARM_DATA_PREFIX"
 echo "train_tokens=$TRAIN_TOKENS train_samples=$TRAIN_SAMPLES warmup_samples=$LR_WARMUP_SAMPLES"
 echo "geometry: max_position=$MAX_POSITION_EMBEDDINGS rotary_base=$ROTARY_BASE rope_scaling=$USE_ROPE_SCALING factor=$ROPE_SCALING_FACTOR"
+echo "curriculum_order_mode=${CURRICULUM_ORDER_MODE:-randomized}"
+echo "transport_profile=${TRANSPORT_PROFILE:-generic}"
 echo
 
 TRANSFORMER_ENGINE_ARGS=(
@@ -86,7 +100,7 @@ NETWORK_SIZE_ARGS=(
     --max-position-embeddings "$MAX_POSITION_EMBEDDINGS"
     --position-embedding-type rope
     --rotary-base "$ROTARY_BASE"
-    --make-vocab-size-divisible-by 128
+    --make-vocab-size-divisible-by "$MAKE_VOCAB_SIZE_DIVISIBLE_BY"
     --normalization "$NORMALIZATION"
     --xielu
     --qk-layernorm
@@ -156,7 +170,7 @@ LEARNING_RATE_ARGS=(
     --lr-warmup-init "$LR_WARMUP_INIT"
 )
 if [ "$LR_SCHEDULE_STYLE" = "WSD" ]; then
-    LEARNING_RATE_ARGS+=(--lr-wsd-decay-style "$LR_DECAY_STYLE" --lr-wsd-decay-samples "$TRAIN_SAMPLES")
+    LEARNING_RATE_ARGS+=(--lr-wsd-decay-style "$LR_DECAY_STYLE" --lr-wsd-decay-samples "$LR_WSD_DECAY_SAMPLES")
 fi
 
 CHECKPOINTING_ARGS=(
@@ -200,6 +214,24 @@ DATA_ARGS=(
 [ "$RESET_POSITION_IDS" = "1" ] && DATA_ARGS+=(--reset-position-ids)
 [ "$EOD_MASK_LOSS" = "1" ] && DATA_ARGS+=(--eod-mask-loss)
 
+case "${CURRICULUM_ORDER_MODE:-randomized}" in
+    randomized)
+        unset MEGATRON_GPT_DATASET_NO_SHUFFLE
+        ;;
+    physical_order)
+        if ! grep -q "MEGATRON_GPT_DATASET_NO_SHUFFLE" "$MEGATRON_LM_DIR/megatron/core/datasets/gpt_dataset.py"; then
+            echo "ERROR: CURRICULUM_ORDER_MODE=physical_order requires the GPTDataset no-shuffle patch in $MEGATRON_LM_DIR" >&2
+            echo "       Run: python3 $REPO_ROOT/scripts/train/patch_megatron_gpt_dataset_no_shuffle.py --megatron-dir $MEGATRON_LM_DIR" >&2
+            exit 6
+        fi
+        export MEGATRON_GPT_DATASET_NO_SHUFFLE=1
+        ;;
+    *)
+        echo "ERROR: CURRICULUM_ORDER_MODE=${CURRICULUM_ORDER_MODE:-} not recognized (expected randomized|physical_order)" >&2
+        exit 2
+        ;;
+esac
+
 RUNTIME_GUARD="$REPO_ROOT/scripts/runtime/pretrain_gpt_te_guard.py"
 TRAINING_CMD=(
     python3 "$RUNTIME_GUARD"
@@ -231,15 +263,27 @@ cat > "$OUTPUT_DIR/run_metadata.json" <<META
   "global_batch_samples": $GLOBAL_BATCH_SIZE,
   "global_batch_tokens": $GLOBAL_BATCH_TOKENS,
   "train_tokens": $TRAIN_TOKENS,
+  "train_iters": $TRAIN_ITERS,
   "lr_peak": "$LR_PEAK",
   "lr_final": "$LR_FINAL",
   "lr_schedule_style": "$LR_SCHEDULE_STYLE",
+  "lr_warmup_iters": $LR_WARMUP_ITERS,
   "lr_warmup_tokens": $LR_WARMUP_TOKENS,
+  "lr_wsd_decay_samples": $LR_WSD_DECAY_SAMPLES,
+  "ademamix_beta2": "$ADEMA_BETA2",
+  "ademamix_beta3": "$ADEMA_BETA3",
+  "ademamix_alpha": "$ADEMA_ALPHA",
+  "ademamix_beta3_warmup": $ADEMA_BETA3_WARMUP_STEPS,
+  "ademamix_alpha_warmup": $ADEMA_ALPHA_WARMUP_STEPS,
   "loss_objective": "$LOSS_OBJECTIVE",
+  "curriculum_order_mode": "${CURRICULUM_ORDER_MODE:-randomized}",
+  "megatron_gpt_dataset_no_shuffle": "${MEGATRON_GPT_DATASET_NO_SHUFFLE:-0}",
+  "transport_profile": "${TRANSPORT_PROFILE:-generic}",
   "max_position_embeddings": $MAX_POSITION_EMBEDDINGS,
   "rotary_base": $ROTARY_BASE,
   "use_rope_scaling": $USE_ROPE_SCALING,
   "rope_scaling_factor": "$ROPE_SCALING_FACTOR",
+  "make_vocab_size_divisible_by": $MAKE_VOCAB_SIZE_DIVISIBLE_BY,
   "tensor_model_parallel_size": $TENSOR_MODEL_PARALLEL_SIZE,
   "pipeline_model_parallel_size": $PIPELINE_MODEL_PARALLEL_SIZE,
   "slurm_job_id": "${SLURM_JOB_ID:-none}",
@@ -254,18 +298,115 @@ export CUDA_DEVICE_MAX_CONNECTIONS=1
 export PYTORCH_ALLOC_CONF="${PYTORCH_ALLOC_CONF:-${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:True}}"
 export PYTORCH_CUDA_ALLOC_CONF="${PYTORCH_CUDA_ALLOC_CONF:-$PYTORCH_ALLOC_CONF}"
 export OMP_NUM_THREADS="${SLURM_CPUS_PER_TASK:-4}"
-export FI_CXI_DEFAULT_TX_SIZE=16384
-export NCCL_NET_FORCE_FLUSH=1
-export FI_CXI_RDZV_GET_MIN=0
-export FI_CXI_SAFE_DEVMEM_COPY_THRESHOLD=16777216
-export NCCL_RAS_ENABLE=0
-export CUDA_CACHE_DISABLE=1
+# Runtime transport knobs only; they do not change the model or optimizer.
+# They are profile choices, not regime invariants.
+case "${TRANSPORT_PROFILE:-generic}" in
+    generic)
+        ;;
+    clariden_cxi)
+        export NCCL_NET="${NCCL_NET:-AWS Libfabric}"
+        export NCCL_NET_GDR_LEVEL="${NCCL_NET_GDR_LEVEL:-PHB}"
+        export NCCL_CROSS_NIC="${NCCL_CROSS_NIC:-1}"
+        export NCCL_PROTO="${NCCL_PROTO:-^LL128}"
+        export FI_CXI_DEFAULT_CQ_SIZE="${FI_CXI_DEFAULT_CQ_SIZE:-131072}"
+        export FI_CXI_DEFAULT_TX_SIZE="${FI_CXI_DEFAULT_TX_SIZE:-16384}"
+        export FI_CXI_DISABLE_HOST_REGISTER="${FI_CXI_DISABLE_HOST_REGISTER:-1}"
+        export FI_CXI_RX_MATCH_MODE="${FI_CXI_RX_MATCH_MODE:-software}"
+        export FI_MR_CACHE_MONITOR="${FI_MR_CACHE_MONITOR:-userfaultfd}"
+        export NCCL_NET_FORCE_FLUSH="${NCCL_NET_FORCE_FLUSH:-0}"
+        if [ "${FI_CXI_USE_DEFAULT_RDZV:-0}" = "1" ]; then
+            unset FI_CXI_RDZV_GET_MIN FI_CXI_RDZV_THRESHOLD FI_CXI_RDZV_EAGER_SIZE
+        else
+            export FI_CXI_RDZV_GET_MIN="${FI_CXI_RDZV_GET_MIN:-0}"
+            export FI_CXI_RDZV_THRESHOLD="${FI_CXI_RDZV_THRESHOLD:-0}"
+            export FI_CXI_RDZV_EAGER_SIZE="${FI_CXI_RDZV_EAGER_SIZE:-0}"
+        fi
+        export FI_CXI_SAFE_DEVMEM_COPY_THRESHOLD="${FI_CXI_SAFE_DEVMEM_COPY_THRESHOLD:-16777216}"
+        ;;
+    *)
+        echo "ERROR: TRANSPORT_PROFILE=${TRANSPORT_PROFILE:-} not recognized (expected generic|clariden_cxi)" >&2
+        exit 2
+        ;;
+esac
+
+if [ "${FI_CXI_USE_DEFAULT_RDZV:-0}" = "1" ]; then
+    unset FI_CXI_RDZV_GET_MIN FI_CXI_RDZV_THRESHOLD FI_CXI_RDZV_EAGER_SIZE
+fi
+[ -n "${FI_CXI_DEFAULT_RX_SIZE:-}" ] && export FI_CXI_DEFAULT_RX_SIZE
+[ -n "${FI_CXI_REQ_BUF_SIZE:-}" ] && export FI_CXI_REQ_BUF_SIZE
+[ -n "${FI_CXI_REQ_BUF_MIN_POSTED:-}" ] && export FI_CXI_REQ_BUF_MIN_POSTED
+[ -n "${FI_CXI_OFLOW_BUF_SIZE:-}" ] && export FI_CXI_OFLOW_BUF_SIZE
+[ -n "${FI_LOG_LEVEL:-}" ] && export FI_LOG_LEVEL
+[ -n "${FI_LOG_PROV:-}" ] && export FI_LOG_PROV
+export NCCL_RAS_ENABLE="${NCCL_RAS_ENABLE:-0}"
+export CUDA_CACHE_DISABLE="${CUDA_CACHE_DISABLE:-1}"
+unset NCCL_NET_PLUGIN
+
+RUNTIME_ENV_PREFIX="unset NCCL_NET_PLUGIN; "
+if [ "${FI_CXI_USE_DEFAULT_RDZV:-0}" = "1" ]; then
+    RUNTIME_ENV_PREFIX+="unset FI_CXI_RDZV_GET_MIN FI_CXI_RDZV_THRESHOLD FI_CXI_RDZV_EAGER_SIZE; "
+fi
+RUNTIME_ENV_VARS=(
+    TORCH_NCCL_AVOID_RECORD_STREAMS
+    TORCH_NCCL_ASYNC_ERROR_HANDLING
+    CUDA_DEVICE_MAX_CONNECTIONS
+    PYTORCH_ALLOC_CONF
+    PYTORCH_CUDA_ALLOC_CONF
+    OMP_NUM_THREADS
+    NCCL_NET
+    NCCL_NET_GDR_LEVEL
+    NCCL_CROSS_NIC
+    NCCL_PROTO
+    NCCL_NCHANNELS_PER_NET_PEER
+    NCCL_NET_GDR_C2C
+    NCCL_NET_GDR_READ
+    NCCL_P2P_LEVEL
+    NCCL_NET_FORCE_FLUSH
+    NCCL_RAS_ENABLE
+    NCCL_SOCKET_IFNAME
+    NCCL_SOCKET_FAMILY
+    NCCL_SOCKET_NTHREADS
+    NCCL_NSOCKS_PERTHREAD
+    NCCL_DEBUG
+    NCCL_DEBUG_SUBSYS
+    OFI_NCCL_PROTOCOL
+    FI_CXI_DEFAULT_CQ_SIZE
+    FI_CXI_DEFAULT_TX_SIZE
+    FI_CXI_DEFAULT_RX_SIZE
+    FI_CXI_DISABLE_HOST_REGISTER
+    FI_CXI_RX_MATCH_MODE
+    FI_MR_CACHE_MONITOR
+    FI_CXI_RDZV_GET_MIN
+    FI_CXI_RDZV_THRESHOLD
+    FI_CXI_RDZV_EAGER_SIZE
+    FI_CXI_RDZV_PROTO
+    FI_CXI_SAFE_DEVMEM_COPY_THRESHOLD
+    FI_CXI_REQ_BUF_SIZE
+    FI_CXI_REQ_BUF_MIN_POSTED
+    FI_CXI_OFLOW_BUF_SIZE
+    FI_CXI_OFLOW_BUF_COUNT
+    FI_CXI_REQ_BUF_MAX_CACHED
+    FI_LOG_LEVEL
+    FI_LOG_PROV
+    CUDA_CACHE_DISABLE
+    MEGATRON_GPT_DATASET_NO_SHUFFLE
+)
+for env_name in "${RUNTIME_ENV_VARS[@]}"; do
+    if [ -n "${!env_name+x}" ]; then
+        printf -v env_value_q '%q' "${!env_name}"
+        RUNTIME_ENV_PREFIX+="export $env_name=$env_value_q; "
+    fi
+done
 
 export MASTER_ADDR
 MASTER_ADDR="$(scontrol show hostnames "$SLURM_JOB_NODELIST" | head -n 1)"
 export MASTER_PORT="${MASTER_PORT:-$((32000 + (${SLURM_JOB_ID:-0} % 1000)))}"
-export WORLD_SIZE="${SLURM_NTASKS:-$MODEL_WORLD_SIZE}"
-echo "distributed: MASTER_ADDR=$MASTER_ADDR MASTER_PORT=$MASTER_PORT WORLD_SIZE=$WORLD_SIZE"
+if [ "${LAUNCH_MODE:-slurm}" = "torchrun" ]; then
+    export WORLD_SIZE="$MODEL_WORLD_SIZE"
+else
+    export WORLD_SIZE="${SLURM_NTASKS:-$MODEL_WORLD_SIZE}"
+fi
+echo "distributed: MASTER_ADDR=$MASTER_ADDR MASTER_PORT=$MASTER_PORT WORLD_SIZE=$WORLD_SIZE LAUNCH_MODE=${LAUNCH_MODE:-slurm}"
 
 LAUNCH_PREFIX=()
 if [ -n "${UENV_IMAGE:-}" ]; then
@@ -280,11 +421,11 @@ cd "$MEGATRON_LM_DIR"
 case "${LAUNCH_MODE:-slurm}" in
     slurm)
         "${LAUNCH_PREFIX[@]}" srun --cpus-per-task "${SLURM_CPUS_PER_TASK:-4}" \
-            -lu bash -c "export PYTHONPATH='$MEGATRON_LM_DIR' RANK=\$SLURM_PROCID LOCAL_RANK=\$SLURM_LOCALID; exec $TRAINING_CMD_Q"
+            -lu bash -c "$RUNTIME_ENV_PREFIX export PYTHONPATH='$MEGATRON_LM_DIR' RANK=\$SLURM_PROCID LOCAL_RANK=\$SLURM_LOCALID; exec $TRAINING_CMD_Q"
         ;;
     torchrun)
         "${LAUNCH_PREFIX[@]}" srun --ntasks-per-node=1 --cpus-per-task "${SLURM_CPUS_PER_TASK:-4}" \
-            -lu bash -c "export PYTHONPATH='$MEGATRON_LM_DIR' MASTER_ADDR='$MASTER_ADDR' MASTER_PORT='$MASTER_PORT'; exec torchrun --no-python --nnodes='${SLURM_NNODES:-$NODES}' --nproc_per_node='$GPUS_PER_NODE' --node_rank=\$SLURM_PROCID --rdzv_backend=c10d --rdzv_endpoint='$MASTER_ADDR:$MASTER_PORT' $TRAINING_CMD_Q"
+            -lu bash -c "$RUNTIME_ENV_PREFIX export PYTHONPATH='$MEGATRON_LM_DIR' MASTER_ADDR='$MASTER_ADDR' MASTER_PORT='$MASTER_PORT'; exec torchrun --no-python --nnodes='${SLURM_NNODES:-$NODES}' --nproc_per_node='$GPUS_PER_NODE' --node_rank=\$SLURM_PROCID --rdzv_backend=c10d --rdzv_endpoint='$MASTER_ADDR:$MASTER_PORT' $TRAINING_CMD_Q"
         ;;
     *)
         echo "ERROR: LAUNCH_MODE=$LAUNCH_MODE not recognized (expected slurm|torchrun)" >&2

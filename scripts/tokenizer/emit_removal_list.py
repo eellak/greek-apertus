@@ -7,7 +7,6 @@ import argparse
 import json
 from collections import Counter
 from pathlib import Path
-from typing import Iterable
 
 
 REMOVE_LATIN_FRAGMENT_TAGS = {"-missing", "-decoded"}
@@ -20,7 +19,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--classified-jsonl", type=Path)
     parser.add_argument("--out-dir", required=True, type=Path)
     parser.add_argument("--base-vocab-size", type=int, default=131_072)
-    parser.add_argument("--cutoffs", nargs="+", type=int, default=[n * 1024 for n in range(1, 26)])
+    parser.add_argument("--target-added-units", type=int, default=17_408)
     parser.add_argument("--policy-version", default="2026-05-17b")
     return parser.parse_args()
 
@@ -55,20 +54,6 @@ def decide(glossary_row: dict) -> tuple[bool, str | None]:
     return False, None
 
 
-def per_cutoff(removals: Iterable[dict], cutoffs: list[int], base_vocab_size: int) -> dict[str, dict]:
-    removal_rows = list(removals)
-    summary: dict[str, dict] = {}
-    for cutoff in cutoffs:
-        upper = base_vocab_size + cutoff
-        removable = sum(1 for row in removal_rows if int(row["id"]) < upper)
-        summary[str(cutoff)] = {
-            "added_units": cutoff,
-            "removable_in_cutoff": removable,
-            "removable_pct": (removable / cutoff) * 100.0,
-        }
-    return summary
-
-
 def main() -> None:
     args = parse_args()
     glossary = load_jsonl_by_id(args.glossary_jsonl)
@@ -101,13 +86,17 @@ def main() -> None:
             handle.write(json.dumps(row, ensure_ascii=False) + "\n")
 
     by_class = Counter(row["removal_class"] for row in removals)
+    target_upper = args.base_vocab_size + args.target_added_units
+    target_removals = [row for row in removals if int(row["id"]) < target_upper]
     summary = {
         "policy_version": args.policy_version,
         "base_vocab_size": args.base_vocab_size,
+        "target_added_units": args.target_added_units,
+        "target_total_vocab_size": target_upper,
         "removable_total": len(removals),
         "keepable_total": keeps,
         "removable_by_class": dict(sorted(by_class.items())),
-        "removable_per_cutoff": per_cutoff(removals, args.cutoffs, args.base_vocab_size),
+        "removable_in_target": len(target_removals),
         "rules": [
             {"class": "latin1_utf8_mojibake", "predicate": "glossary.category == 'mojibake'"},
             {"class": "mixed_script_artifact", "predicate": "glossary.category == 'mixed_script_token'"},

@@ -1,6 +1,9 @@
 {
   "policy_version": "2026-05-17b",
   "base_vocab_size": 131072,
+  "target_added_units": 17408,
+  "target_total_vocab_size": 148480,
+  "vocab_alignment": 256,
   "rules": [
     {
       "class": "latin1_utf8_mojibake",
@@ -33,16 +36,15 @@
       "scope": "narrow subset"
     }
   ],
-  "known_counts_at_25600": {
-    "removable_total": 104,
-    "keepable_total": 25496,
+  "known_counts_at_target": {
+    "removable_total": 69,
     "removable_by_class": {
-      "mixed_script_artifact": 77,
+      "mixed_script_artifact": 50,
       "cleaner_extraction_tag": 2,
       "cleaner_linenewline_bpe_fragment": 3,
       "cleaner_linenewline_placeholder": 2,
-      "pdf_postscript_glyph": 14,
-      "latin1_utf8_mojibake": 6
+      "pdf_postscript_glyph": 9,
+      "latin1_utf8_mojibake": 3
     }
   }
 }
