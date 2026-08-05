@@ -35,4 +35,13 @@ python3 scripts/model_bridge/patch_apertus_extras.py --hf-dir "$HF_DIR" --megatr
 python3 scripts/model_bridge/verify_hf_roundtrip.py --reference-hf-dir "$HF_DIR" --roundtrip-hf-dir "$ROUNDTRIP_HF" --require-r17-match
 ```
 
-The exact Megatron checkout and environment are run-relative, not part of the bridge contract; record them in the run metadata rather than pinning them here. The bridge scripts reference upstream Megatron files (e.g. `saver_core.py`, `saver_swissai_hf.py`) that ship with the `swiss-ai/Megatron-LM` clone, not this repo.
+The production run pins upstream Megatron commit
+`c92402e39ef3c8e69ea378a59e79059dc14541f4` and the runtime patches recorded in
+[`full_8b_mixed_cpt.json`](../configs/training/full_8b_mixed_cpt.json). A
+different checkout invalidates the production conversion/runtime receipt.
+
+The verified Token-Distillation checkpoint and exact verification-file hashes
+are recorded in
+[`token_distillation_8b.json`](../configs/initialization/token_distillation_8b.json).
+The bridge scripts reference upstream files such as `saver_core.py` and
+`saver_swissai_hf.py`; those ship with the Swiss-AI Megatron clone, not here.

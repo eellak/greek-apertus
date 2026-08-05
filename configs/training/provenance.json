@@ -1,0 +1,30 @@
+{
+  "schema_version": "greek_apertus_full8_provenance_v1",
+  "recipe": "configs/training/full_8b_mixed_cpt.json",
+  "primary_sources": {
+    "apertus_technical_report": "https://arxiv.org/abs/2509.14233",
+    "apertus_8b_training_script": "https://github.com/swiss-ai/pretrain-code/blob/531cc8be2f76064127cad99a61019f985a7c7ee2/pretraining/submit_apertus_8b.sh",
+    "swissai_megatron": "https://github.com/swiss-ai/Megatron-LM/tree/c92402e39ef3c8e69ea378a59e79059dc14541f4",
+    "local_sweep_decision": "https://github.com/fffoivos/train-apertus-with-glossapi/blob/86c1b8fe362233bba6e4e2ca92eb4535287fb240/subprojects/05_token_distillation_cpt/PRODUCTION_HYPERPARAMETERS_DECISION_20260711.md",
+    "token_distillation_paper": "https://arxiv.org/abs/2505.20133"
+  },
+  "field_provenance": {
+    "architecture_layers_hidden_ffn_heads_query_groups_xielu_qknorm_rmsnorm_bias_and_untied_embeddings": "inherited_from_Apertus_8B",
+    "sequence_length_4096_rope_base_500000_scaling_factor_8": "inherited_corrected_main_pretraining_geometry",
+    "weight_decay_0.1_gradient_clip_0.1_goldfish_k50_h50_bf16_fp32_main_gradients": "inherited_from_Apertus_and_held_fixed_in_project_sweeps",
+    "peak_lr_5.5e-5_final_lr_5.5e-6": "selected_by_local_controlled_LR_sweep",
+    "warmup_400_fixed": "selected_and_held_fixed_locally; explicitly_not_derived_from_beta2",
+    "ademamix_beta2_0.999_beta3_0.999_alpha_4": "selected_by_local_controlled_sweeps",
+    "79_20_1_replay": "selected_by_local_replay_sweep",
+    "D0_mixed_order": "selected_as_point_estimate_leader_of_completed_0.5B_five_order_screen; per_document_uncertainty_rerun_still_pending",
+    "global_batch_1024_microbatch_2_TP2_PP1": "validated_project_runtime_geometry",
+    "19248_update_horizon": "derived_from_exact_full_corpus_and_replay_quotas",
+    "source_validation_GreekMMLU_and_per_document_cadence": "project_evaluation_design"
+  },
+  "non_claims": [
+    "The released Apertus long-context configuration is not used as the CPT RoPE geometry.",
+    "The old 13.5B horizon and beta2=0.995 defaults are superseded.",
+    "The D0 selection is not claimed to have document-bootstrap statistical significance until the pending rerun completes.",
+    "The replay source-family evidence is not an exact original-consumed-document manifest."
+  ]
+}

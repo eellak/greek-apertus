@@ -1,0 +1,105 @@
+{
+  "schema_version": "greek_apertus_full8_data_mix_v1",
+  "mix_id": "full8-d0-mixed-79-20-1-20260801",
+  "status": "source_pools_and_exact_quotas_frozen_full8_packing_receipt_pending",
+  "schedule": {
+    "arm": "D0_mixed",
+    "description": "Stationary randomized HPLT and GlossAPI/non-HPLT mixture in their natural post-exclusion proportions, with fixed replay.",
+    "seed": 20260801,
+    "selected_without_replacement": true,
+    "stationary_windowed_randomization": true,
+    "glossapi_internal_curriculum": false,
+    "fixed_source_specific_permutations": true
+  },
+  "active_tokens": {
+    "hplt_modern_greek": 44042201419,
+    "glossapi_non_hplt_modern_greek": 19734450444,
+    "all_modern_greek": 63776651863,
+    "foreign_replay": 16145987813,
+    "old_greek_replay": 807299391,
+    "total": 80729939067
+  },
+  "fractions": {
+    "hplt_of_total": "0.545549791415650196083406391059",
+    "glossapi_non_hplt_of_total": "0.244450208585216892394660030767",
+    "modern_greek_of_total": "0.790000000000867088478066421826",
+    "foreign_replay_of_total": "0.199999999995045208696763303851",
+    "old_greek_replay_of_total": "0.0100000000040877028251702743231",
+    "hplt_within_modern_greek": "0.690569356221584065001672036739",
+    "glossapi_non_hplt_within_modern_greek": "0.309430643778415934998327963261"
+  },
+  "slot_geometry": {
+    "sequence_length": 4096,
+    "global_batch_sequences": 1024,
+    "global_batch_tokens": 4194304,
+    "optimizer_updates": 19248,
+    "training_sequences": 19709952,
+    "token_slots": 80731963392,
+    "loss_inactive_tail_slots": 2024325,
+    "loss_active_tokens": 80729939067
+  },
+  "modern_greek_source": {
+    "repo_id": "fffoivos/glossapi-greek-nanochat-pretraining-dataset-v2",
+    "revision": "3f97cec48af502f4996cf8ff20b02660e2dd3d31",
+    "coverage": "complete_post_exclusion_eligible_pass",
+    "hplt_selector": "source_dataset matches ^HPLT/",
+    "glossapi_non_hplt_selector": "all eligible rows whose source_dataset does not match ^HPLT/",
+    "libduth": {
+      "technical_selection": "included_by_explicit_owner_directive_and_present_in_public_v2",
+      "evidence_conflict": "The older technical source-license adjudication records CC BY-NC-ND and does not support training or redistribution.",
+      "legal_conclusion_claimed_by_this_repository": false,
+      "required_resolution": "reconciled_permission_evidence_or_explicit_recorded_risk_acceptance"
+    },
+    "required_identity_columns": [
+      "source_dataset",
+      "source_doc_id"
+    ],
+    "global_exact_content_dedup": {
+      "algorithm": "text_sha256_prefix_128",
+      "excluded_documents": 1,
+      "excluded_tokens": 4,
+      "near_deduplication_claim": false
+    }
+  },
+  "foreign_replay_source": {
+    "families": [
+      "FineWeb-Edu",
+      "FineWeb2-HQ/FineWeb2",
+      "FineMath",
+      "StarCoder"
+    ],
+    "claim_boundary": "These are public source families used by Apertus. This is not a claim that every selected replay document can be proven to have been consumed in the original Apertus run.",
+    "capacity_tokens": 45299005175,
+    "selection_tokens": 16145987813,
+    "selected_without_replacement": true,
+    "duplicate_policy": "audit_and_preserve_original_source_record_multiplicity"
+  },
+  "old_greek_replay_source": {
+    "definition": "document-level Nanochat-overlap audit pool",
+    "claim_boundary": "Overlap-classified replay source, not an exact original-consumed-document manifest.",
+    "capacity_tokens": 2666110500,
+    "selection_tokens": 807299391,
+    "selected_without_replacement": true
+  },
+  "evidence": {
+    "completed_pool_receipt": {
+      "path_on_cscs": "/capstor/scratch/cscs/fffoivos/cpt_corpus_clariden/dataset_scheduling_0p5b/20260802T104539Z-mini-schedule-v1/pool_corpus_receipt.json",
+      "sha256": "76658cc8495b58a3a3dadc8aca6d16c7fed627ef8bced89d17a877f9f9125014",
+      "scope": "exact identities, post-exclusion token counts, dedup accounting, capacities and heldout exclusions",
+      "tokenizer_note": "This receipt used the 0.5B-compatible overlay carrying the same appended Greek merge chain. A new production-8B packing receipt is still mandatory."
+    },
+    "production_tokenizer_source_binaries": {
+      "root_on_cscs": "/capstor/scratch/cscs/fffoivos/cpt_corpus_clariden/cpt25b_midtraining/20260731T124000Z-cpt25b-v1",
+      "modern_greek_capacity_tokens_before_final_exact_duplicate_exclusion": 63776651867,
+      "foreign_replay_capacity_tokens": 45299005189,
+      "old_greek_replay_capacity_tokens": 2666110500
+    }
+  },
+  "required_before_launch": [
+    "production_8b_pool_receipt_matches_these_exact_active_token_counts",
+    "production_8b_packing_receipt_matches_tokenizer_hash_and_slot_geometry",
+    "D0_schedule_manifest_proves_each_selected_sequence_is_consumed_exactly_once",
+    "heldout_and_GreekMMLU_decontamination_bindings_are_excluded_before_packing",
+    "libduth_permission_evidence_conflict_is_reconciled_or_explicitly_accepted"
+  ]
+}

@@ -1,24 +1,54 @@
 {
-  "schema_version": "2026-06-01",
-  "name": "apertus_greek_modern_148480",
+  "schema_version": "2026-08-05",
+  "name": "apertus_greek_modern_polytonic_148992",
+  "status": "production_frozen_published",
+  "source": {
+    "repo_id": "fffoivos/apertus-tokenizer-extension",
+    "revision": "fcd33ec09fb7d86bc072b3a4b3e890efa6473b66",
+    "subfolder": "greek-modern-polytonic-tokenizer",
+    "tokenizer_json_sha256": "bbb08e71929b519c5c2362338b0fc6a0e99955cb8fdbf0729ae1311117e6561b"
+  },
   "base_vocab_size": 131072,
-  "added_units": 17408,
-  "total_vocab_size": 148480,
+  "modern_added_units": 17408,
+  "polytonic_added_units": 512,
+  "total_added_units": 17920,
+  "total_vocab_size": 148992,
   "vocab_alignment": 256,
+  "also_divisible_by": 512,
+  "padding_tokens": 0,
+  "pad_token_id": 3,
   "id_ranges": {
     "base": [0, 131071],
-    "added": [131072, 148479]
+    "modern_greek": [131072, 148479],
+    "polytonic_greek": [148480, 148991]
   },
   "construction": {
     "type": "continuous_bpe_append_only",
-    "source_full_added_units": 25600,
-    "curation": "skip_removed_tokens_and_backfill",
-    "removed_in_target_scope": 69,
-    "removal_policy": "configs/tokenizer/removal_policy.json"
+    "modern_source_full_added_units": 25600,
+    "modern_curation": "skip_removed_tokens_and_backfill",
+    "modern_removed_in_target_scope": 69,
+    "modern_removal_policy": "configs/tokenizer/removal_policy.json",
+    "polytonic_curation": "dependency_safe_sequential_merge_append",
+    "polytonic_cutoff": 512,
+    "dummy_or_padding_entries": 0
+  },
+  "required_release_evidence": [
+    "manifest.json",
+    "release_audit.json",
+    "selection.json",
+    "suspicious_token_review.json"
+  ],
+  "upstream_manifest_metadata_issue": {
+    "field": "dataset_tokenization_status",
+    "published_value": "not_started",
+    "current_evidence": "production-tokenizer corpus binaries exist on CSCS",
+    "impact": "stale_status_metadata_only; tokenizer identity_and_hash_are_unaffected"
   },
   "notes": [
-    "Apertus base ids are preserved.",
-    "The shipped extension is the cleaned 17,408-unit modern Greek extension.",
-    "The total vocabulary size is divisible by 256."
+    "Apertus base ids and the complete base merge prefix are preserved.",
+    "The modern stage contains the cleaned 17,408-unit extension.",
+    "The second stage contains 512 reviewed polytonic continuation merges.",
+    "All ids are contiguous from 0 through 148991.",
+    "148992 is divisible by both 256 and 512 without vocabulary padding."
   ]
 }

@@ -1,24 +1,48 @@
 # Greek Apertus
 
-Continued pretraining of [Apertus-8B](https://huggingface.co/swiss-ai/Apertus-8B-2509) on Greek: the tokenizer extension, the HF ↔ Megatron model bridge, and the training harness that drives the run.
+Public scientific contract and reusable tooling for continued pretraining of
+[Apertus-8B](https://huggingface.co/swiss-ai/Apertus-8B-2509) on the complete
+eligible GlossAPI Greek corpus with controlled replay.
 
-Contents:
+## Full-run readiness review
 
-- **Hyperparameters** — env file and JSON manifest for the CPT regime (optimizer, loss, positional geometry, data semantics, parallelism, runtime guards). See [`docs/HYPERPARAMETERS.md`](docs/HYPERPARAMETERS.md).
-- **Training harness** — Slurm/Megatron entrypoints, scheduler policy, launch profiles, and curriculum-order guards. See [`docs/TRAINING.md`](docs/TRAINING.md).
-- **HF ↔ Megatron bridge** — round-trip conversion plus xIELU and QK-Norm fidelity patching. See [`docs/MODEL_BRIDGE.md`](docs/MODEL_BRIDGE.md).
-- **Tokenizer tooling** — the cleaned 17,408-unit Greek extension builder and added-token removal manifest. See [`docs/TOKENIZER_EXTENSION.md`](docs/TOKENIZER_EXTENSION.md).
-- **Reuse boundary** — which settings are frozen design decisions and which are per-run knobs to retune. See [`docs/REUSE_GUIDE.md`](docs/REUSE_GUIDE.md).
+| Component | Review result | Authority |
+|---|---|---|
+| Greek training corpus | Correct source dataset and exact post-exclusion HPLT/non-HPLT identities and quotas are frozen. `libduth` is included by owner directive, with its conflicting CC BY-NC-ND adjudication retained as an unresolved gate. | [`data_mix.d0.json`](configs/training/data_mix.d0.json) |
+| Replay | Sufficient no-replacement foreign and Old-Greek capacity is available. The evidence boundary is explicit: source-family/overlap evidence is not an exact original-consumed-document manifest. | [`TRAINING_MIX.md`](docs/TRAINING_MIX.md) |
+| Final 8B packed dataset | **Not yet complete.** The production-tokenizer pool, pack and D0 schedule receipts remain launch gates. | [`full_8b_mixed_cpt.json`](configs/training/full_8b_mixed_cpt.json) |
+| Tokenizer | Ready and published: 131,072 base + 17,408 modern + 512 polytonic = 148,992 contiguous tokens, no padding, SHA-pinned. | [`extension.json`](configs/tokenizer/extension.json) |
+| 8B embedding initialization | Ready: untied layer-11 Token Distillation plus separate output-row calibration, preservation checks and zero-drift HF/Megatron round trip passed. | [`token_distillation_8b.json`](configs/initialization/token_distillation_8b.json) |
+| Training settings | Frozen for the D0 full run, including corrected RoPE, AdEMAMix, WSD-10, Goldfish, batch/parallelism and NaN/Inf checks. | [`full_8b_mixed_cpt.json`](configs/training/full_8b_mixed_cpt.json) |
+| Evaluation | 13 source-conditioned panels, native GreekMMLU at 20 milestones, and per-document validation at initialization/cooldown/final are specified. | [`HYPERPARAMETERS.md`](docs/HYPERPARAMETERS.md) |
+| Production launch | **Not authorized.** Data receipts, initial evaluations, train/resume/conversion smokes, storage and scheduler gates must pass first. | [`TRAINING.md`](docs/TRAINING.md) |
 
-## Layout
+The portable contract is validated by:
 
-- [`configs/training/`](configs/training) — training regime, launch profiles, and a `dataset_paths.example.env` template.
-- [`configs/tokenizer/`](configs/tokenizer) — final extension contract and removal policy.
-- [`scripts/train/`](scripts/train) — training entrypoints.
-- [`scripts/model_bridge/`](scripts/model_bridge) — HF ↔ Megatron-LM-Swiss-AI conversion tools.
-- [`scripts/runtime/`](scripts/runtime) — training-launcher runtime guard.
-- [`scripts/tokenizer/`](scripts/tokenizer) — clean extension builder and removal-manifest emitter.
+```bash
+python3 scripts/validate_full_8b_contract.py
+```
+
+## Important execution boundary
+
+The scripts already present in this repository remain useful bridge and
+diagnostic references. The receipt-producing full-D0 scheduler and segmented
+CSCS campaign are maintained in
+[`fffoivos/train-apertus-with-glossapi`](https://github.com/fffoivos/train-apertus-with-glossapi),
+under `subprojects/07_full_8b_cpt`. They must match the public JSON contract in
+this repository before launch. The generic single-prefix trainer here is not a
+substitute for the exact D0 schedule reader.
+
+## Documentation
+
+- [`TRAINING_MIX.md`](docs/TRAINING_MIX.md) — exact HPLT, GlossAPI and replay mix, provenance and receipt gates.
+- [`TOKENIZER_EXTENSION.md`](docs/TOKENIZER_EXTENSION.md) — both extension stages and release hash.
+- [`TOKEN_DISTILLATION.md`](docs/TOKEN_DISTILLATION.md) — exact untied 8B initialization procedure and evidence.
+- [`HYPERPARAMETERS.md`](docs/HYPERPARAMETERS.md) — production training and evaluation settings.
+- [`provenance.json`](configs/training/provenance.json) — field-by-field inherited, experimentally selected and derived settings.
+- [`MODEL_BRIDGE.md`](docs/MODEL_BRIDGE.md) — HF/Megatron conversion fidelity.
+- [`TRAINING.md`](docs/TRAINING.md) — execution boundary and launch gates.
 
 ## License
 
-[MIT](LICENSE) — © 2026 GFOSS – Open Technologies Alliance. Free to use, modify, and redistribute, including commercially; retain the copyright notice.
+[MIT](LICENSE) — © 2026 GFOSS – Open Technologies Alliance.
