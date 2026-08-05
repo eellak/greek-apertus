@@ -12,7 +12,8 @@
     "architecture_layers_hidden_ffn_heads_query_groups_xielu_qknorm_rmsnorm_bias_and_untied_embeddings": "inherited_from_Apertus_8B",
     "sequence_length_4096_rope_base_500000_scaling_factor_8": "inherited_corrected_main_pretraining_geometry",
     "weight_decay_0.1_gradient_clip_0.1_goldfish_k50_h50_bf16_fp32_main_gradients": "inherited_from_Apertus_and_held_fixed_in_project_sweeps",
-    "peak_lr_5.5e-5_final_lr_5.5e-6": "selected_by_local_controlled_LR_sweep",
+    "peak_lr_5.5e-5": "selected_by_completed_local_controlled_8B_peak_LR_sweep_with_WSD10_held_fixed",
+    "final_lr_5.5e-6_WSD10": "frozen_held_fixed_baseline_not_independently_selected;_T10_T20_T30_experiment_selected_no_winner",
     "warmup_400_fixed": "selected_and_held_fixed_locally; explicitly_not_derived_from_beta2",
     "ademamix_beta2_0.999_beta3_0.999_alpha_4": "selected_by_local_controlled_sweeps",
     "79_20_1_replay": "selected_by_local_replay_sweep",
@@ -25,6 +26,7 @@
     "The released Apertus long-context configuration is not used as the CPT RoPE geometry.",
     "The old 13.5B horizon and beta2=0.995 defaults are superseded.",
     "The D0 selection is not claimed to have document-bootstrap statistical significance until the pending rerun completes.",
-    "The replay source-family evidence is not an exact original-consumed-document manifest."
+    "The replay source-family evidence is not an exact original-consumed-document manifest.",
+    "The legacy old_greek_replay and old_greek keys identify Greek source-family replay dominated by Modern-Greek material; they do not establish Ancient-Greek training or retention."
   ]
 }

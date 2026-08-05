@@ -9,7 +9,7 @@ eligible GlossAPI Greek corpus with controlled replay.
 | Component | Review result | Authority |
 |---|---|---|
 | Greek training corpus | Correct source dataset and exact post-exclusion HPLT/non-HPLT identities and quotas are frozen. `libduth` is included by owner directive, with its conflicting CC BY-NC-ND adjudication retained as an unresolved gate. | [`data_mix.d0.json`](configs/training/data_mix.d0.json) |
-| Replay | Sufficient no-replacement foreign and Old-Greek capacity is available. The evidence boundary is explicit: source-family/overlap evidence is not an exact original-consumed-document manifest. | [`TRAINING_MIX.md`](docs/TRAINING_MIX.md) |
+| Replay | Sufficient no-replacement foreign and Greek replay capacity is available. The evidence boundary is explicit: source-family evidence is not an exact original-consumed-document manifest. The historical machine key `old_greek_replay` is retained only for compatibility. | [`TRAINING_MIX.md`](docs/TRAINING_MIX.md) |
 | Final 8B packed dataset | **Not yet complete.** The production-tokenizer pool, pack and D0 schedule receipts remain launch gates. | [`full_8b_mixed_cpt.json`](configs/training/full_8b_mixed_cpt.json) |
 | Tokenizer | Ready and published: 131,072 base + 17,408 modern + 512 polytonic = 148,992 contiguous tokens, no padding, SHA-pinned. | [`extension.json`](configs/tokenizer/extension.json) |
 | 8B embedding initialization | Ready: untied layer-11 Token Distillation plus separate output-row calibration, preservation checks and zero-drift HF/Megatron round trip passed. | [`token_distillation_8b.json`](configs/initialization/token_distillation_8b.json) |
