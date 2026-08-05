@@ -33,6 +33,11 @@ ARM="${ARM:?ARM is required: vanilla, extension, or td}"
 INIT_CKPT="${INIT_CKPT:?INIT_CKPT is required}"
 OUTPUT_DIR="${OUTPUT_DIR:?OUTPUT_DIR is required}"
 MEGATRON_LM_DIR="${MEGATRON_LM_DIR:?MEGATRON_LM_DIR is required}"
+ACTUAL_MEGATRON_COMMIT="$(git -C "$MEGATRON_LM_DIR" rev-parse HEAD)"
+if [ "$ACTUAL_MEGATRON_COMMIT" != "$MEGATRON_LM_COMMIT" ]; then
+    echo "ERROR: Megatron HEAD=$ACTUAL_MEGATRON_COMMIT, expected $MEGATRON_LM_COMMIT" >&2
+    exit 2
+fi
 
 case "$ARM" in
     vanilla)
@@ -50,9 +55,24 @@ case "$ARM" in
 esac
 
 SEQ_LEN="$SEQ_LENGTH"
-TRAIN_SAMPLES=$(( TRAIN_TOKENS / SEQ_LEN ))
+# TRAIN_SAMPLES is explicit because the production D0 stream ends with
+# loss-inactive filler slots and therefore must not be derived by flooring the
+# active-token count.
 LR_WARMUP_SAMPLES=$(( LR_WARMUP_TOKENS / SEQ_LEN ))
 MODEL_WORLD_SIZE=$(( ${SLURM_NNODES:-$NODES} * GPUS_PER_NODE ))
+
+if (( TRAIN_TOKEN_SLOTS != TRAIN_SAMPLES * SEQ_LEN )); then
+    echo "ERROR: TRAIN_TOKEN_SLOTS must equal TRAIN_SAMPLES * SEQ_LENGTH" >&2
+    exit 2
+fi
+if (( TRAIN_TOKEN_SLOTS - TRAIN_TOKENS != LOSS_INACTIVE_TAIL_SLOTS )); then
+    echo "ERROR: active-token and loss-inactive-tail accounting drift" >&2
+    exit 2
+fi
+if (( TRAIN_ITERS * GLOBAL_BATCH_SIZE != TRAIN_SAMPLES )); then
+    echo "ERROR: TRAIN_ITERS * GLOBAL_BATCH_SIZE must equal TRAIN_SAMPLES" >&2
+    exit 2
+fi
 
 if (( TRAIN_TOKENS < LR_WARMUP_TOKENS )); then
     echo "ERROR: TRAIN_TOKENS=$TRAIN_TOKENS is smaller than LR_WARMUP_TOKENS=$LR_WARMUP_TOKENS" >&2
@@ -136,7 +156,6 @@ REGULARIZATION_ARGS=(
 TRAINING_ARGS=(
     --micro-batch-size "$MICROBATCH_SIZE"
     --global-batch-size "$GLOBAL_BATCH_SIZE"
-    --no-check-for-nan-in-loss-and-grad
     --train-samples "$TRAIN_SAMPLES"
     --cross-entropy-loss-fusion
     --disable-bias-linear
@@ -262,7 +281,9 @@ cat > "$OUTPUT_DIR/run_metadata.json" <<META
   "seq_length": $SEQ_LEN,
   "global_batch_samples": $GLOBAL_BATCH_SIZE,
   "global_batch_tokens": $GLOBAL_BATCH_TOKENS,
-  "train_tokens": $TRAIN_TOKENS,
+  "active_train_tokens": $TRAIN_TOKENS,
+  "training_token_slots": $TRAIN_TOKEN_SLOTS,
+  "loss_inactive_tail_slots": $LOSS_INACTIVE_TAIL_SLOTS,
   "train_iters": $TRAIN_ITERS,
   "lr_peak": "$LR_PEAK",
   "lr_final": "$LR_FINAL",
@@ -277,6 +298,7 @@ cat > "$OUTPUT_DIR/run_metadata.json" <<META
   "ademamix_alpha_warmup": $ADEMA_ALPHA_WARMUP_STEPS,
   "loss_objective": "$LOSS_OBJECTIVE",
   "curriculum_order_mode": "${CURRICULUM_ORDER_MODE:-randomized}",
+  "mix_seed": "$MIX_SEED",
   "megatron_gpt_dataset_no_shuffle": "${MEGATRON_GPT_DATASET_NO_SHUFFLE:-0}",
   "transport_profile": "${TRANSPORT_PROFILE:-generic}",
   "max_position_embeddings": $MAX_POSITION_EMBEDDINGS,

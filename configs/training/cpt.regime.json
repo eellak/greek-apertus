@@ -1,12 +1,10 @@
 {
-  "schema_version": "2026-06-01",
-  "regime_id": "apertus_8b_greek_cpt",
-  "description": "Greek Apertus CPT regime. Defaults describe the current full run; short diagnostics should override run length or early-exit behavior explicitly.",
-  "source_files": {
-    "executable_env": "configs/training/cpt.env",
-    "human_docs": "docs/HYPERPARAMETERS.md",
-    "training_script": "scripts/train/train_apertus_cpt.sbatch"
-  },
+  "schema_version": "2026-08-05",
+  "regime_id": "apertus_8b_greek_full_d0_cpt",
+  "description": "Portable scientific contract for the full Apertus-8B Greek D0 mixed CPT run.",
+  "authoritative_recipe": "configs/training/full_8b_mixed_cpt.json",
+  "data_mix": "configs/training/data_mix.d0.json",
+  "initialization": "configs/initialization/token_distillation_8b.json",
   "model": {
     "family": "Apertus",
     "scale": "8B",
@@ -14,14 +12,10 @@
     "hidden_size": 4096,
     "ffn_hidden_size": 21504,
     "num_attention_heads": 32,
-    "group_query_attention": true,
     "num_query_groups": 8,
     "normalization": "RMSNorm",
     "activation": "xIELU",
-    "xielu_init_ap": 0.8,
-    "xielu_init_an": 0.8,
     "qk_layernorm": true,
-    "qknorm_impl": "apex",
     "disable_bias_linear": true,
     "untie_embeddings_and_output_weights": true,
     "make_vocab_size_divisible_by": 256,
@@ -32,83 +26,44 @@
     "position_embedding_type": "rope",
     "rotary_base": 500000,
     "use_rope_scaling": true,
-    "rope_scaling_factor": 8.0
+    "rope_scaling_factor": 8.0,
+    "source": "corrected_Apertus_main_pretraining_geometry"
   },
   "optimizer": {
     "name": "AdEMAMix",
     "adam_beta1": 0.9,
-    "adam_beta2": 0.995,
+    "adam_beta2": 0.999,
     "ademamix_beta3": 0.999,
     "ademamix_alpha": 4.0,
     "weight_decay": 0.1,
     "clip_grad": 0.1,
-    "warmup_policy": "beta3 half-life warmup and alpha linear warmup over the full run"
+    "beta3_warmup_updates": 19248,
+    "alpha_warmup_updates": 19248
   },
   "learning_rate": {
-    "peak_lr": 5.5e-5,
-    "final_lr": 5.5e-6,
+    "peak_lr": 0.000055,
+    "final_lr": 0.0000055,
     "schedule_style": "WSD",
-    "warmup_init_lr": 5.5e-6,
+    "warmup_init_lr": 0.0000055,
     "warmup_iters": 400,
-    "warmup_policy": "2/(1-beta2) iterations",
-    "warmup_tokens": 1677721600,
-    "decay_samples": 659179,
-    "decay_fraction": 0.2,
-    "decay_style_if_wsd": "1-sqrt",
-    "diagnostic_policy": "Do not infer full-run decay/cooldown from short 5B diagnostics; diagnostics must say when they override this schedule."
-  },
-  "open_decisions": {
-    "note": "These are validated starting values, not frozen results. They are the subject of a planned, not-yet-run sweep and must not be replicated as settled.",
-    "sweep_candidates": {
-      "adam_beta2": "0.995 starting value; sweep range [0.99, 0.999]. Couples to LR warmup via round(2/(1-beta2)).",
-      "ademamix_alpha": "4.0 starting value; ~half of Apertus-8B's published 8 (no alpha is published for beta3=0.999).",
-      "peak_lr": "5.5e-5 = 0.5x Apertus-8B's pretraining peak (1.1e-4); the primary subject of the planned LR sweep."
-    }
-  },
-  "schedulers": {
-    "policy_scope": "Scheduler formulas are part of the training regime and are independent of the corpus mixture. Resolved counts depend on TRAIN_TOKENS and GLOBAL_BATCH_TOKENS.",
-    "learning_rate": {
-      "type": "WSD",
-      "warmup_iters_formula": "round(2 / (1 - adam_beta2))",
-      "warmup_init_lr_ratio": 0.1,
-      "peak_lr": 5.5e-5,
-      "final_lr_ratio": 0.1,
-      "cooldown_fraction_of_train_samples": 0.2,
-      "cooldown_shape": "1-sqrt",
-      "resolved_default": {
-        "adam_beta2": 0.995,
-        "warmup_iters": 400,
-        "warmup_tokens": 1677721600,
-        "train_tokens": 13500000000,
-        "cooldown_samples": 659179
-      }
-    },
-    "ademamix_beta3": {
-      "type": "linear_half_life_warmup",
-      "start_value_source": "adam_beta1",
-      "target_value": 0.999,
-      "warmup_steps_formula": "train_iters",
-      "resolved_default_steps": 3218
-    },
-    "ademamix_alpha": {
-      "type": "linear_warmup",
-      "start_value": 0.0,
-      "target_value": 4.0,
-      "warmup_steps_formula": "train_iters",
-      "resolved_default_steps": 3218
-    }
+    "warmup_policy": "fixed_project_setting_not_derived_from_beta2",
+    "stable_until_update": 15398,
+    "cooldown_iters": 3850,
+    "cooldown_samples": 3942400,
+    "cooldown_fraction": 0.2,
+    "cooldown_shape": "1-sqrt",
+    "lr_floor_ratio": 0.1
   },
   "batching": {
     "sequence_length": 4096,
     "micro_batch_size": 2,
     "global_batch_size_samples": 1024,
     "global_batch_tokens": 4194304,
-    "train_tokens": 13500000000,
-    "train_iters": 3218,
-    "save_interval_iters": 119,
-    "eval_interval_iters": 25,
-    "eval_iters": 1,
-    "in_run_validation_note": "This trainer uses split 100,0,0 and configures no in-run validation; eval_interval_iters / eval_iters are provenance-only and inert unless a held-out-eval split/patch is added."
+    "active_train_tokens": 80729939067,
+    "training_token_slots": 80731963392,
+    "loss_inactive_tail_slots": 2024325,
+    "train_samples": 19709952,
+    "train_iters": 19248
   },
   "loss": {
     "objective": "goldfish",
@@ -116,128 +71,37 @@
     "goldfish_h": 50
   },
   "precision": {
-    "mixed_precision_flag": "bf16",
-    "main_grads_dtype": "fp32"
+    "parameters": "bf16",
+    "main_gradients": "fp32",
+    "nan_and_inf_checks_enabled": true
   },
   "data_semantics": {
-    "dataloader_type": "single",
-    "split": "100,0,0",
+    "schedule": "D0_mixed",
+    "mix_seed": 20260801,
+    "training_seed": 20260609,
     "reset_attention_mask": true,
     "reset_position_ids": true,
     "eod_mask_loss": true,
-    "curriculum_order_mode": "physical_order",
-    "curriculum_order_guard": "MEGATRON_GPT_DATASET_NO_SHUFFLE patch required when physical_order is selected.",
-    "data_seed": 20260609,
-    "dataloader_workers": 4,
-    "dataset_builder_threads": 4
-  },
-  "dataset_scope": {
-    "full_run": "Tokenizer-extension CPT on the full HPLT slice plus the full GlossAPI Greek slice and replay data.",
-    "diagnostics": "Smaller first-slice runs, including HPLT-only 5B runs and TD-layer probes, are tests and must not be described as the full-run dataset.",
-    "dataset_paths": "Concrete data prefixes are supplied outside git through dataset_paths.env."
+    "checkpoint_averaging": false
   },
   "parallelism": {
     "tensor_model_parallel_size": 2,
     "pipeline_model_parallel_size": 1,
-    "resource_policy": "Node count, walltime, account, partition, and software image are launch-profile choices, not regime invariants.",
-    "launch_mode_policy": "Use a launch profile appropriate to the cluster. For multi-node torchrun profiles, Slurm should start one task per node and torchrun should start local GPU workers."
+    "context_parallel_size": 1,
+    "data_parallel_size": 32,
+    "world_size": 64,
+    "gradient_accumulation_steps": 16
   },
-  "operational_profiles": {
-    "profile_scope": "Operational profiles preserve reusable cluster setup knowledge while remaining tunable per run.",
-    "profile_files": [
-      "configs/training/launch_profiles/clariden_16node_cxi.env"
-    ]
+  "evaluation": {
+    "source_conditioned_panel_count": 13,
+    "source_conditioned_interval_updates": 25,
+    "greekmmlu_milestone_count": 20,
+    "per_document_milestones": [0, 15398, 19248]
   },
-  "validated_launch_profile_example": {
-    "profile_name": "clariden_16node_torchrun_cxi",
-    "tunable": true,
-    "scope": "Runtime transport and launch mechanics only; does not change model, optimizer, data, scheduler, or tokenizer semantics.",
-    "do_not_treat_as_regime_invariant": [
-      "nodes",
-      "walltime",
-      "account",
-      "partition",
-      "software_image",
-      "segments",
-      "exit_interval"
-    ],
-    "nodes": 16,
-    "gpus_per_node": 4,
-    "segments": 4,
-    "exit_interval": 952,
-    "slurm_ntasks_per_node": 1,
-    "launcher": "srun one task per node, then torchrun --nproc_per_node=$GPUS_PER_NODE",
-    "world_size": "nodes * gpus_per_node",
-    "uenv_policy": "Re-export runtime transport variables inside the uenv-launched shell.",
-    "transport_defaults": {
-      "TRANSPORT_PROFILE": "clariden_cxi",
-      "NCCL_NET": "AWS Libfabric",
-      "NCCL_NET_GDR_LEVEL": "PHB",
-      "NCCL_CROSS_NIC": "1",
-      "NCCL_PROTO": "^LL128",
-      "NCCL_NET_FORCE_FLUSH": "0",
-      "FI_CXI_DEFAULT_CQ_SIZE": "131072",
-      "FI_CXI_DEFAULT_TX_SIZE": "16384",
-      "FI_CXI_DISABLE_HOST_REGISTER": "1",
-      "FI_CXI_RX_MATCH_MODE": "software",
-      "FI_MR_CACHE_MONITOR": "userfaultfd",
-      "FI_CXI_RDZV_GET_MIN": "0",
-      "FI_CXI_RDZV_THRESHOLD": "0",
-      "FI_CXI_RDZV_EAGER_SIZE": "0",
-      "FI_CXI_SAFE_DEVMEM_COPY_THRESHOLD": "16777216"
-    }
-  },
-  "checkpointing": {
-    "format": "torch_dist",
-    "fully_parallel_load": true,
-    "dist_ckpt_strictness": "assume_ok_unexpected",
-    "override_opt_param_scheduler": true,
-    "initial_cpt_load": {
-      "load_optimizer": false,
-      "load_rng": false
-    },
-    "resume_cpt_load": {
-      "load_optimizer": true,
-      "load_rng": true
-    },
-    "async_save": true,
-    "distributed_timeout_minutes": 60
-  },
-  "runtime_guards": {
-    "wrapper": "scripts/runtime/pretrain_gpt_te_guard.py",
-    "guards": [
-      "Transformer Engine empty extra_state load guard",
-      "numpy product alias compatibility",
-      "CUDA device from LOCAL_RANK",
-      "torch_dist same-topology metadata fallback",
-      "xIELU optimizer audit"
-    ]
-  },
-  "probe_policy": {
-    "notional_train_tokens_must_cover_warmup": true,
-    "short_probe_stop_mechanism": "EXIT_INTERVAL",
-    "reason": "Keep TRAIN_TOKENS >= LR_WARMUP_TOKENS so the scheduler is valid, then stop diagnostic probes early via exit interval."
-  },
-  "preflight_checks": [
-    {
-      "name": "missing_arm_env_var",
-      "check": "ARM must be set to vanilla, extension, or td."
-    },
-    {
-      "name": "slurm_world_size_match",
-      "check": "Submit with --ntasks-per-node equal to GPUS_PER_NODE."
-    },
-    {
-      "name": "warmup_within_train_tokens",
-      "check": "TRAIN_TOKENS must be greater than or equal to LR_WARMUP_TOKENS."
-    },
-    {
-      "name": "rope_geometry_match",
-      "check": "max_position_embeddings = 4096, rotary_base = 500000, rope scaling factor = 8.0."
-    },
-    {
-      "name": "physical_order_sampler",
-      "check": "When CURRICULUM_ORDER_MODE=physical_order, Megatron GPTDataset must carry the MEGATRON_GPT_DATASET_NO_SHUFFLE patch."
-    }
-  ]
+  "execution_boundary": {
+    "generic_harness": "scripts/train/train_apertus_cpt.sbatch",
+    "generic_harness_status": "diagnostic_reference_not_the_receipt_bound_D0_production_launcher",
+    "production_orchestration": "fffoivos/train-apertus-with-glossapi/subprojects/07_full_8b_cpt",
+    "production_launch_status": "not_authorized_full8_data_and_smoke_gates_pending"
+  }
 }

@@ -1,51 +1,60 @@
-# Tokenizer Extension
+# Production tokenizer extension
 
-Two utilities:
+Load the production tokenizer from
+[`fffoivos/apertus-tokenizer-extension@fcd33ec`, subfolder
+`greek-modern-polytonic-tokenizer`](https://huggingface.co/fffoivos/apertus-tokenizer-extension/tree/fcd33ec09fb7d86bc072b3a4b3e890efa6473b66/greek-modern-polytonic-tokenizer).
 
-1. Build the cleaned 17,408-unit append-only Greek extension.
-2. Emit a removal manifest for added tokens that are extraction, encoding, or cleaner-residue artifacts (see `removal_policy.json` for the six named classes).
+```python
+from transformers import AutoTokenizer
 
-Current extension contract: [`configs/tokenizer/extension.json`](../configs/tokenizer/extension.json). Current policy: [`configs/tokenizer/removal_policy.json`](../configs/tokenizer/removal_policy.json).
-
-## Append-Only Contract
-
-The base Apertus ids stay fixed. The modern Greek extension adds 17,408 cleaned BPE units, giving a total vocabulary size of 148,480 (`256 x 580`). The added id range is `131072 .. 148479`.
-
-The 17,408 cutoff is a frozen, empirically-chosen decision, not a free knob: it was selected at the fertility / token-firing knee via the swiss-ai TokEval intrinsic-evaluation sweep over a 1k-spaced grid of candidate cutoffs (an earlier analytic anchor of 11,264 was superseded). `build_clean_extension.py` exposes `--added-units`, but the shipped value is fixed.
-
-## Removal Policy
-
-Tokens matching any of the six removal classes are structurally excluded from the shipped extension. The builder walks the full continuous-BPE extension, skips ids in the removal manifest, and backfills with the next valid merges so the final added block remains contiguous and 256-aligned.
-
-## Commands
-
-These commands are reference recipes: the annotated inputs they consume
-(`added_token_glossary.jsonl`, `classified_added_tokens.jsonl`, and the uncurated
-full continuous-BPE Greek extension) are produced upstream in the
-tokenizer-experiment pipeline and are not shipped here.
-
-The two scripts form one pipeline: `emit_removal_list.py` runs first and writes
-`removal_list.jsonl`, which `build_clean_extension.py` then consumes via
-`--removal-list`.
-
-Emit the removal manifest — per-added-token keep/remove decisions, derived from
-the upstream glossary and per-token classification:
-
-```bash
-python3 scripts/tokenizer/emit_removal_list.py \
-  --glossary-jsonl /path/to/added_token_glossary.jsonl \
-  --classified-jsonl /path/to/classified_added_tokens.jsonl \
-  --out-dir /path/to/manifests
+tokenizer = AutoTokenizer.from_pretrained(
+    "fffoivos/apertus-tokenizer-extension",
+    revision="fcd33ec09fb7d86bc072b3a4b3e890efa6473b66",
+    subfolder="greek-modern-polytonic-tokenizer",
+    trust_remote_code=True,
+)
+assert len(tokenizer) == 148_992
 ```
 
-Build the cleaned extension — `--full-tokenizer-dir` is the uncurated
-continuous-BPE Greek extension before curation; the builder skips the removed
-ids and backfills with the next valid merges:
+The machine contract is
+[`configs/tokenizer/extension.json`](../configs/tokenizer/extension.json).
 
-```bash
-python3 scripts/tokenizer/build_clean_extension.py \
-  --base-tokenizer-dir /path/to/apertus-base-tokenizer \
-  --full-tokenizer-dir /path/to/full-extension-tokenizer \
-  --removal-list /path/to/manifests/removal_list.jsonl \
-  --out-dir /path/to/tokenizers
+## Geometry
+
+| Stage | IDs | Count |
+|---|---:|---:|
+| Apertus base | `0..131071` | 131,072 |
+| Modern Greek | `131072..148479` | 17,408 |
+| Polytonic Greek | `148480..148991` | 512 |
+| **Total** | `0..148991` | **148,992** |
+
+`148992 = 582 × 256 = 291 × 512`. IDs and merges are contiguous and the
+vocabulary requires zero dummy or padding entries with TP=2 and
+`--make-vocab-size-divisible-by 256`.
+
+The frozen `tokenizer.json` SHA-256 is:
+
+```text
+bbb08e71929b519c5c2362338b0fc6a0e99955cb8fdbf0729ae1311117e6561b
 ```
+
+The published release includes the manifest, release audit, cutoff selection
+and suspicious-token review. The polytonic block was appended sequentially so
+every merge dependency already exists when that merge is applied.
+
+One release-manifest field is stale: `dataset_tokenization_status` still says
+`not_started`, although production-tokenizer corpus binaries now exist on
+CSCS. This does not affect tokenizer files, IDs, merges or hashes, but the
+metadata should be corrected in a future tokenizer-repository revision.
+
+## Reconstruction tools
+
+The scripts in [`scripts/tokenizer/`](../scripts/tokenizer) reconstruct the
+cleaned 17,408-unit modern stage from upstream experiment artifacts. They do
+not by themselves rebuild the second 512-unit polytonic stage; the published
+SHA-pinned tokenizer is the production source of truth.
+
+The removal policy remains
+[`configs/tokenizer/removal_policy.json`](../configs/tokenizer/removal_policy.json).
+It governs artifact removal in the modern stage and must not be reapplied to
+renumber an already published tokenizer.

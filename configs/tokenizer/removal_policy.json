@@ -1,5 +1,7 @@
 {
   "policy_version": "2026-05-17b",
+  "stage_scope": "modern_greek_ids_131072_through_148479_only",
+  "production_tokenizer_note": "This policy builds the 148480-row modern stage. The reviewed 512-row polytonic continuation is appended afterward under configs/tokenizer/extension.json.",
   "base_vocab_size": 131072,
   "target_added_units": 17408,
   "target_total_vocab_size": 148480,

@@ -1,78 +1,97 @@
-# Hyperparameters
+# Full Apertus-8B CPT settings
 
-Hyperparameters for Greek Apertus CPT. "Hyperparameters" here spans optimizer, loss, positional geometry, data semantics, model parallelism, checkpoint behavior, and runtime guards — not just scalar LR/batch settings.
+The authoritative machine recipe is
+[`configs/training/full_8b_mixed_cpt.json`](../configs/training/full_8b_mixed_cpt.json).
+[`cpt.env`](../configs/training/cpt.env) mirrors its scalar defaults for the
+generic reference harness.
+Field-level evidence classification and primary sources are in
+[`configs/training/provenance.json`](../configs/training/provenance.json).
 
-Executable config: [`configs/training/cpt.env`](../configs/training/cpt.env)
-
-Machine-readable manifest: [`configs/training/cpt.regime.json`](../configs/training/cpt.regime.json)
-
-## Scope
-
-The full run is CPT with the tokenizer extension over the entire HPLT slice, the entire GlossAPI Greek slice, and replay data. Smaller runs are diagnostics and must state any overrides explicitly. The 5B-token runs exercised only the opening of training; their constant-after-warmup LR schedule is not the full-run regime.
-
-## Training
+## Model and optimizer
 
 | Field | Value |
-| --- | ---: |
+|---|---:|
+| Layers / hidden / FFN | 32 / 4096 / 21,504 |
+| Attention heads / query groups | 32 / 8 |
+| Activation / normalization | xIELU / RMSNorm |
+| QK-LayerNorm | enabled |
+| Embeddings | input/output untied |
+| Linear bias | disabled |
 | Sequence length | 4096 |
-| Global batch | 1024 samples (4.19 M tokens) |
-| Microbatch | 2 |
 | Optimizer | AdEMAMix |
-| Adam β1 | 0.9 |
-| Adam β2 | 0.995 † |
-| AdEMAMix β3 | 0.999 |
-| AdEMAMix α | 4.0 † |
-| Weight decay | 0.1 |
-| Gradient clipping | 0.1 |
-| Peak LR | 5.5e-5 † |
-| Final LR | 5.5e-6 |
-| LR schedule | WSD, 1-sqrt cooldown |
-| Warmup init LR | 5.5e-6 |
-| Warmup | 400 iterations, ~1.68 B tokens |
-| Cooldown | final 20% of training samples |
-| Train tokens | 13.5 B |
-| Loss | Goldfish (k = 50, h = 50) |
-| Tensor parallel | 2 |
-| Pipeline parallel | 1 |
-| Precision | bf16, fp32 main grads |
+| β1 / β2 / β3 / α | 0.9 / 0.999 / 0.999 / 4.0 |
+| β3 and α ramps | full 19,248 updates |
+| Weight decay / gradient clip | 0.1 / 0.1 |
+| Precision | bf16 parameters, fp32 main gradients |
+| NaN/Inf checks | enabled |
+| Loss | Goldfish, k=50, h=50 |
 
-† Starting value, not a frozen result — subject of a planned sweep, not yet run. β2 = 0.995 (sweep range [0.99, 0.999], couples to warmup); α = 4.0 (≈ half of Apertus-8B's 8); peak LR 5.5e-5 = 0.5 × Apertus's pretraining peak (1.1e-4). Do not replicate these three as settled. The machine manifest records the same under `open_decisions.sweep_candidates`.
+The previous public values β2=0.995 and a 13.5B-token horizon are obsolete.
+Warmup remains the experimentally selected fixed 400 updates; it is not
+recomputed as `2/(1-β2)`.
 
-## Non-Scalar Choices
-
-- Loss: Goldfish, `k = 50`, `h = 50`.
-- Optimizer: AdEMAMix with `β2 = 0.995`, `β3 = 0.999`, `α = 4.0`, β3 half-life warmup, and α linear warmup over the full run.
-- Architecture: xIELU, QK-LayerNorm, RMSNorm, untied embeddings/output weights, bias-free linear layers.
-- Data semantics: reset attention mask, reset position ids, EOD mask loss, single-dataset split `100,0,0`.
-- Curriculum order: `CURRICULUM_ORDER_MODE=physical_order` requires the Megatron GPTDataset no-shuffle patch; use `randomized` only to reproduce randomized-sampler runs.
-- Runtime: Transformer Engine guard, torch-dist metadata fallback, xIELU optimizer audit.
-- Model parallel shape: tensor parallel 2, pipeline parallel 1.
-- Resource launch shape: use a launch profile. Node count, walltime, account, partition, software image, and transport knobs are operational choices, not hyperparameters.
-
-## Scheduler Policies
-
-Schedulers are stored as policies in [`configs/training/cpt.regime.json`](../configs/training/cpt.regime.json), with resolved values for the default 13.5B-token run.
-
-| Scheduler | Policy |
-| --- | --- |
-| LR warmup | `round(2 / (1 - β2))` iterations; 400 iterations for β2 = 0.995 |
-| LR shape | WSD, same shape independent of corpus mixture |
-| LR cooldown | final 20% of training samples, `1-sqrt` shape |
-| LR floor | `0.1 x peak_lr` |
-| β3 warmup | Megatron half-life warmup from β1 to β3 over `TRAIN_ITERS` |
-| α warmup | linear warmup over `TRAIN_ITERS` |
-
-The formulas are the frozen regime; the resolved token/sample counts are derived and shift when `TRAIN_TOKENS` or batch size changes.
-
-## Positional Geometry
+## Learning rate
 
 | Field | Value |
-| --- | ---: |
-| Max position embeddings | 4096 |
-| Rotary base | 500 000 |
-| RoPE scaling | enabled |
-| RoPE scaling factor | 8.0 |
+|---|---:|
+| Schedule | WSD |
+| Peak | `5.5e-5` |
+| Warmup initial | `5.5e-6` |
+| Warmup | 400 updates / 409,600 sequences |
+| Stable through | update 15,398 |
+| Cooldown | 3,850 updates / 3,942,400 sequences |
+| Cooldown shape | `1-sqrt` |
+| Final | `5.5e-6` = 10% of peak |
 
-## Probe Pattern
+WSD-10 is the selected baseline for this full D0 run. A different 10–30%
+floor would be a separate LR experiment and must not be changed silently.
 
-For short diagnostic runs, keep `TRAIN_TOKENS` at or above `LR_WARMUP_TOKENS` and use `EXIT_INTERVAL` to stop early. Warmup is samples-based, so the scheduler stays valid. If a diagnostic intentionally uses a different LR schedule, record that as a diagnostic override.
+## Batch and parallelism
+
+| Field | Value |
+|---|---:|
+| Microbatch | 2 sequences |
+| Global batch | 1,024 sequences / 4,194,304 token slots |
+| Updates | 19,248 |
+| Training sequences | 19,709,952 |
+| Active tokens | 80,729,939,067 |
+| Token slots | 80,731,963,392 |
+| Loss-inactive terminal slots | 2,024,325 |
+| TP / PP / CP / DP | 2 / 1 / 1 / 32 |
+| World size | 64 GPUs on 16 four-GPU nodes |
+| Gradient accumulation | 16 |
+
+## Corrected RoPE geometry
+
+Use main-pretraining geometry, not the released post-long-context model
+configuration:
+
+```text
+--max-position-embeddings 4096
+--position-embedding-type rope
+--rotary-base 500000
+--use-rope-scaling
+--rope-scaling-factor 8.0
+```
+
+## Data semantics and seeds
+
+- D0 stationary windowed randomization from
+  [`data_mix.d0.json`](../configs/training/data_mix.d0.json).
+- Pool-permutation/mix seed: `20260801`.
+- Megatron training/RNG seed: `20260609`.
+- Reset attention masks and position IDs at document boundaries.
+- Mask EOD targets from loss.
+- Checkpoint averaging is disabled.
+
+## Evaluation
+
+The run evaluates 13 source-conditioned panels every 25 updates: HPLT,
+non-HPLT, OpenArchives, Greek PhD, historical polytonic, English, German,
+Russian, Chinese, code, math, Old Greek and neutral external Modern Greek.
+Metrics include NLL, BPB and base-target versus added-target NLL.
+
+Native GreekMMLU is evaluated at initialization, after warmup, approximately
+every 5B tokens, cooldown start and final—20 milestones in total. Report full
+and decontaminated subsets, zero-shot accuracy, choice NLL and correct-answer
+BPB. Per-document validation runs at updates 0, 15,398 and 19,248.

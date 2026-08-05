@@ -1,0 +1,82 @@
+{
+  "schema_version": "greek_apertus_8b_token_distillation_init_v1",
+  "status": "completed_verified",
+  "base_model": {
+    "repo_id": "swiss-ai/Apertus-8B-2509",
+    "revision": "3162c99675aa588097cecd4a24b9aa1f712af477",
+    "input_output_embeddings_tied": false
+  },
+  "tokenizer": {
+    "repo_id": "fffoivos/apertus-tokenizer-extension",
+    "revision": "fcd33ec09fb7d86bc072b3a4b3e890efa6473b66",
+    "subfolder": "greek-modern-polytonic-tokenizer",
+    "tokenizer_json_sha256": "bbb08e71929b519c5c2362338b0fc6a0e99955cb8fdbf0729ae1311117e6561b",
+    "vocab_size": 148992
+  },
+  "modern_stage": {
+    "starting_checkpoint": "published_uncpt_experiment-checkpoints/TokenDistil-Init",
+    "new_id_range": [131072, 148479],
+    "target_layer": 11,
+    "epochs": 1,
+    "batch_size": 8,
+    "learning_rate": 0.0001,
+    "precision": "bf16",
+    "requested_trainable_tokens": 17392,
+    "completed_trainable_tokens": 17377,
+    "non_embedding_drift": 0
+  },
+  "polytonic_stage": {
+    "new_id_range": [148480, 148991],
+    "pre_initialization": "dependency_safe_merge_parent_chain_with_norm_calibration",
+    "input_token_distillation": {
+      "target_layer": 11,
+      "snippets_per_token": 25,
+      "minimum_accepted_snippets_per_token": 25,
+      "minimum_trained_fraction": 0.9,
+      "epochs": 1,
+      "batch_size": 8,
+      "learning_rate": 0.0001,
+      "precision": "bf16"
+    },
+    "untied_output_calibration": {
+      "objective": "next_token_cross_entropy",
+      "steps": 400,
+      "sequence_length": 512,
+      "learning_rate": 0.0002,
+      "max_gradient_norm": 1.0,
+      "seed": 20260729
+    }
+  },
+  "verified_artifact": {
+    "megatron_tp2_checkpoint_on_cscs": "/capstor/scratch/cscs/fffoivos/models/greek-cpt25b-init-roundtrip/20260731T124000Z-cpt25b-v1/megatron_tp2_r17patched",
+    "production_verification": {
+      "path_on_cscs": "/capstor/scratch/cscs/fffoivos/models/greek-cpt25b-init/20260731T124000Z-cpt25b-v1/production_init_verification.json",
+      "file_sha256": "7b4adb065f401305064cda8c45cc1b2c1430366ef8fbf5ee060f154be5b48e26",
+      "assertions": [
+        "existing_input_rows_exact",
+        "existing_output_rows_exact",
+        "non_embedding_tensors_exact",
+        "new_rows_finite",
+        "new_rows_nonzero"
+      ]
+    },
+    "roundtrip_verification": {
+      "path_on_cscs": "/capstor/scratch/cscs/fffoivos/models/greek-cpt25b-init-roundtrip/20260731T124000Z-cpt25b-v1/work/verification.json",
+      "file_sha256": "06ddc69f4787f470b85d4be55992f898b98d8ab4fd8ab34a89a4d3bb96eb7e33",
+      "required_zero_drift": [
+        "standard_parameters",
+        "R17_tensors",
+        "xIELU_tensors",
+        "QK_Norm_tensors",
+        "prompt_logits"
+      ]
+    }
+  },
+  "implementation_evidence": {
+    "canonical_method_repo": "https://github.com/konstantinjdobler/token-distillation",
+    "canonical_method_commit": "35702b5809599ecd68b7845eca27a0d7b7cec0da",
+    "fixed_id_adapter": "https://github.com/fffoivos/train-apertus-with-glossapi/blob/86c1b8fe362233bba6e4e2ca92eb4535287fb240/subprojects/03_apertus_extension_and_embedding_adaptation/03_4_implementation_experiments/init_bakeoff/token_distillation/train_retok_td.py",
+    "production_builder": "https://github.com/fffoivos/train-apertus-with-glossapi/blob/86c1b8fe362233bba6e4e2ca92eb4535287fb240/subprojects/05_token_distillation_cpt/06_25b_midtraining_probe/initialization/build_production_init.sbatch",
+    "production_verifier": "https://github.com/fffoivos/train-apertus-with-glossapi/blob/86c1b8fe362233bba6e4e2ca92eb4535287fb240/subprojects/05_token_distillation_cpt/06_25b_midtraining_probe/initialization/verify_production_init.py"
+  }
+}
