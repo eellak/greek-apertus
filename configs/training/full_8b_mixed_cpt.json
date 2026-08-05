@@ -164,6 +164,7 @@
   "launch_gates": [
     "full8_pool_receipt",
     "full8_packing_and_D0_schedule_receipts",
+    "D0_selection_confirmed_after_per_document_rerun_or_explicit_point_estimate_acceptance",
     "libduth_permission_evidence_conflict_reconciled_or_explicitly_accepted",
     "all_13_validation_panels_frozen",
     "tokenizer_and_initialization_hashes_reverified",

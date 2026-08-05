@@ -127,6 +127,7 @@ def main() -> int:
     require(len(greek) == 20 and greek[0] == 0 and greek[-1] == 19248, "GreekMMLU cadence drift")
     require(not (set(greek[1:]) - checkpoints), "GreekMMLU milestone missing saved checkpoint")
     require(recipe["data_semantics"]["checkpoint_averaging"] is False, "checkpoint averaging was excluded")
+    require("D0_selection_confirmed_after_per_document_rerun_or_explicit_point_estimate_acceptance" in recipe["launch_gates"], "D0 selection uncertainty gate missing")
     require("libduth_permission_evidence_conflict_reconciled_or_explicitly_accepted" in recipe["launch_gates"], "recipe libduth gate missing")
 
     software = recipe["software"]

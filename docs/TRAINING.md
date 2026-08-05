@@ -57,16 +57,18 @@ segment.
 
 ## Mandatory launch gates
 
-1. Freeze a clean immutable orchestration checkout and patched Megatron runtime receipt.
-2. Rebuild the production-8B pool, packed-data and D0 schedule receipts and match [`data_mix.d0.json`](../configs/training/data_mix.d0.json).
-3. Freeze all 13 validation panels and GreekMMLU decontamination bindings.
-4. Reverify tokenizer and Token-Distillation artifact hashes.
-5. Run finite initial source validation, all initial per-document panels and initial full/clean GreekMMLU.
-6. Pass a two-update train/save/resume smoke with optimizer, RNG and sample-cursor parity.
-7. Pass Megatron-to-HF conversion and GreekMMLU evaluation equivalence smoke.
-8. Verify at least 6 TB available for checkpoints and evaluation conversions.
-9. Record a fresh scheduler/capacity snapshot.
-10. Obtain explicit production launch authorization.
+1. Confirm D0 after the pending five-arm per-document rerun, or explicitly accept selection from the existing point estimates.
+2. Reconcile the `libduth` permission-evidence conflict or record explicit risk acceptance.
+3. Freeze a clean immutable orchestration checkout and revalidate the patched Megatron runtime receipt.
+4. Rebuild the production-8B pool, packed-data and D0 schedule receipts and match [`data_mix.d0.json`](../configs/training/data_mix.d0.json).
+5. Freeze all 13 validation panels and GreekMMLU decontamination bindings.
+6. Reverify tokenizer and Token-Distillation artifact hashes.
+7. Run finite initial source validation, all initial per-document panels and initial full/clean GreekMMLU.
+8. Pass a two-update train/save/resume smoke with optimizer, RNG and sample-cursor parity.
+9. Pass Megatron-to-HF conversion and GreekMMLU evaluation equivalence smoke.
+10. Verify at least 6 TB available for checkpoints and evaluation conversions.
+11. Record a fresh scheduler/capacity snapshot.
+12. Obtain explicit production launch authorization.
 
 The production launcher is dry-run by default and must require the exact
 confirmation string `APERTUS8B_FULL_MIXED_CPT` for a live submission.
