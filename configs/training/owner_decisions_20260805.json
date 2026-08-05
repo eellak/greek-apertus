@@ -1,0 +1,25 @@
+{
+  "schema_version": "greek_apertus_full8_owner_decisions_v1",
+  "status": "accepted",
+  "recorded_at": "2026-08-05T11:17:54Z",
+  "recipe_id": "full8b-d0-mixed-wsd10-v1",
+  "decisions": {
+    "D0_selection_confirmed_after_per_document_rerun_or_explicit_point_estimate_acceptance": {
+      "accepted": true,
+      "basis": "explicit_point_estimate_acceptance"
+    },
+    "libduth_permission_evidence_conflict_reconciled_or_explicitly_accepted": {
+      "accepted": true,
+      "basis": "explicit_recorded_risk_acceptance",
+      "include_libduth": true,
+      "legal_conclusion_claimed": false
+    },
+    "explicit_production_launch_authorization": {
+      "accepted": true,
+      "basis": "owner_go_ahead_to_prepare_order_nodes_and_babysit_until_completion"
+    },
+    "checkpoint_averaging": {
+      "accepted": false
+    }
+  }
+}

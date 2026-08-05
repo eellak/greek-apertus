@@ -15,7 +15,7 @@ eligible GlossAPI Greek corpus with controlled replay.
 | 8B embedding initialization | Ready: untied layer-11 Token Distillation plus separate output-row calibration, preservation checks and zero-drift HF/Megatron round trip passed. | [`token_distillation_8b.json`](configs/initialization/token_distillation_8b.json) |
 | Training settings | Frozen for the D0 full run, including corrected RoPE, AdEMAMix, WSD-10, Goldfish, batch/parallelism and NaN/Inf checks. | [`full_8b_mixed_cpt.json`](configs/training/full_8b_mixed_cpt.json) |
 | Evaluation | 13 source-conditioned panels, native GreekMMLU at 20 milestones, and per-document validation at initialization/cooldown/final are specified. | [`HYPERPARAMETERS.md`](docs/HYPERPARAMETERS.md) |
-| Production launch | **Not authorized.** The pending per-document schedule-selection review (or explicit point-estimate acceptance), data receipts, initial evaluations, smokes, storage and scheduler gates must pass first. | [`TRAINING.md`](docs/TRAINING.md) |
+| Production launch | **Owner-authorized, technical gates pending.** D0 point-estimate acceptance and the `libduth` risk decision are recorded. Data receipts, the DP32/DP64 benchmark, initial evaluations, smokes, storage and scheduler gates must still pass. | [`owner_decisions_20260805.json`](configs/training/owner_decisions_20260805.json) |
 
 The portable contract is validated by:
 

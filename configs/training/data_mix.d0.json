@@ -48,7 +48,8 @@
       "technical_selection": "included_by_explicit_owner_directive_and_present_in_public_v2",
       "evidence_conflict": "The older technical source-license adjudication records CC BY-NC-ND and does not support training or redistribution.",
       "legal_conclusion_claimed_by_this_repository": false,
-      "required_resolution": "reconciled_permission_evidence_or_explicit_recorded_risk_acceptance"
+      "required_resolution": "explicit_recorded_risk_acceptance",
+      "risk_acceptance": "configs/training/owner_decisions_20260805.json"
     },
     "required_identity_columns": [
       "source_dataset",

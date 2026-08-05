@@ -63,6 +63,7 @@ def main() -> int:
     recipe = load("configs/training/full_8b_mixed_cpt.json")
     regime = load("configs/training/cpt.regime.json")
     provenance = load("configs/training/provenance.json")
+    owner = load("configs/training/owner_decisions_20260805.json")
 
     require(tokenizer["base_vocab_size"] == 131_072, "base vocabulary drift")
     require(tokenizer["modern_added_units"] == 17_408, "modern extension drift")
@@ -129,6 +130,25 @@ def main() -> int:
     require(recipe["data_semantics"]["checkpoint_averaging"] is False, "checkpoint averaging was excluded")
     require("D0_selection_confirmed_after_per_document_rerun_or_explicit_point_estimate_acceptance" in recipe["launch_gates"], "D0 selection uncertainty gate missing")
     require("libduth_permission_evidence_conflict_reconciled_or_explicitly_accepted" in recipe["launch_gates"], "recipe libduth gate missing")
+    require(recipe["owner_decisions"] == "configs/training/owner_decisions_20260805.json", "owner decision pointer drift")
+    require(owner["status"] == "accepted" and owner["recipe_id"] == recipe["recipe_id"], "owner decision receipt drift")
+    accepted = set(recipe["accepted_owner_gates"])
+    require(accepted == {
+        "D0_selection_confirmed_after_per_document_rerun_or_explicit_point_estimate_acceptance",
+        "libduth_permission_evidence_conflict_reconciled_or_explicitly_accepted",
+        "explicit_production_launch_authorization",
+    }, "accepted owner gate set drift")
+    require(all(owner["decisions"][name]["accepted"] is True for name in accepted), "owner gate acceptance drift")
+    require(owner["decisions"]["libduth_permission_evidence_conflict_reconciled_or_explicitly_accepted"]["legal_conclusion_claimed"] is False, "libduth acceptance must not manufacture a legal conclusion")
+    profiles = recipe["execution_profiles"]
+    for profile_id, nodes, dp, accumulation, boundaries_expected in (
+        ("dp32_16node", 16, 32, 16, [0, 3208, 6416, 9624, 12832, 16040, 19248]),
+        ("dp64_32node", 32, 64, 8, [0, 6416, 12832, 19248]),
+    ):
+        profile = profiles[profile_id]
+        require(profile["nodes"] == nodes and profile["world_size"] == nodes * 4, f"{profile_id} world geometry drift")
+        require(profile["data_parallel"] == dp and profile["gradient_accumulation_steps"] == accumulation, f"{profile_id} batch geometry drift")
+        require(profile["segment_boundaries"] == boundaries_expected, f"{profile_id} segment drift")
 
     software = recipe["software"]
     require(software["megatron_upstream_commit"] == "c92402e39ef3c8e69ea378a59e79059dc14541f4", "Megatron commit drift")
@@ -173,7 +193,8 @@ def main() -> int:
         "updates": batch["training_updates"],
         "vocab_size": tokenizer["total_vocab_size"],
         "launch_ready": False,
-        "pending_launch_gates": recipe["launch_gates"],
+        "owner_authorized": True,
+        "pending_launch_gates": [gate for gate in recipe["launch_gates"] if gate not in accepted],
     }, indent=2, sort_keys=True))
     return 0
 

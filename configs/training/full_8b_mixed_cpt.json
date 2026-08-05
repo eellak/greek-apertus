@@ -1,11 +1,12 @@
 {
   "schema_version": "greek_apertus_full8_cpt_v1",
   "recipe_id": "full8b-d0-mixed-wsd10-v1",
-  "status": "scientific_contract_frozen_launch_gates_pending",
+  "status": "owner_authorized_technical_launch_gates_pending",
   "data_mix": "configs/training/data_mix.d0.json",
   "tokenizer": "configs/tokenizer/extension.json",
   "initialization": "configs/initialization/token_distillation_8b.json",
   "provenance": "configs/training/provenance.json",
+  "owner_decisions": "configs/training/owner_decisions_20260805.json",
   "model": {
     "layers": 32,
     "hidden_size": 4096,
@@ -77,6 +78,25 @@
     "distributed_optimizer": true,
     "overlap_gradient_reduce": true,
     "overlap_parameter_gather": true
+  },
+  "execution_profiles": {
+    "selection_rule": "Promote DP64 only after the matched 288-update parity, restart, throughput and GPU-hour gates; otherwise use DP32.",
+    "dp32_16node": {
+      "nodes": 16,
+      "world_size": 64,
+      "data_parallel": 32,
+      "gradient_accumulation_steps": 16,
+      "segment_boundaries": [0, 3208, 6416, 9624, 12832, 16040, 19248],
+      "status": "proven_fallback"
+    },
+    "dp64_32node": {
+      "nodes": 32,
+      "world_size": 128,
+      "data_parallel": 64,
+      "gradient_accumulation_steps": 8,
+      "segment_boundaries": [0, 6416, 12832, 19248],
+      "status": "candidate_requires_benchmark_promotion"
+    }
   },
   "data_semantics": {
     "reset_attention_mask": true,
@@ -175,6 +195,11 @@
     "initial_per_document_validation",
     "at_least_6TB_available",
     "fresh_scheduler_snapshot",
+    "explicit_production_launch_authorization"
+  ],
+  "accepted_owner_gates": [
+    "D0_selection_confirmed_after_per_document_rerun_or_explicit_point_estimate_acceptance",
+    "libduth_permission_evidence_conflict_reconciled_or_explicitly_accepted",
     "explicit_production_launch_authorization"
   ]
 }
