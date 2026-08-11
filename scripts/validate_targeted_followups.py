@@ -21,6 +21,12 @@ def main() -> int:
     require(release["revision"] == "987b8955fcd395c6219e39df9e64715457f69065", "release revision drift")
     require(release["anonymized_to_apertus_standard"] is True, "anonymization drift")
     require(release["additional_global_deduplication"] is False, "second dedup is forbidden")
+    heldout = value["heldout_exclusion"]
+    require(heldout["validation_panels"] == 13, "validation panel count drift")
+    require(heldout["comparison"] == "exact_utf8_text_sha256", "heldout comparison drift")
+    require(heldout["exclude_matches_before_packing"] is True, "heldout exclusion disabled")
+    require(heldout["zero_overlap_postscan_required"] is True, "heldout postscan disabled")
+    require(heldout["deduplication"] is False, "heldout exclusion must not deduplicate")
     shared = value["shared_scientific_contract"]
     require(shared["modern_foreign_old_greek_mix"] == [79, 20, 1], "mix drift")
     require(shared["execution_profile"] == "dp32_16node" and shared["dp64_allowed"] is False, "execution profile drift")

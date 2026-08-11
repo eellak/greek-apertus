@@ -8,6 +8,14 @@
     "additional_global_deduplication": false,
     "greekmmlu_decontamination_required_after_anonymization": true
   },
+  "heldout_exclusion": {
+    "validation_panels": 13,
+    "comparison": "exact_utf8_text_sha256",
+    "exclude_matches_before_packing": true,
+    "decision_ledger_required": true,
+    "zero_overlap_postscan_required": true,
+    "deduplication": false
+  },
   "shared_scientific_contract": {
     "tokenizer": "configs/tokenizer/extension.json",
     "initialization": "configs/initialization/token_distillation_8b.json",

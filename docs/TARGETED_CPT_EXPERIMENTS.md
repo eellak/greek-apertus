@@ -21,6 +21,12 @@ against the pinned GreekMMLU revision after anonymization. This scan is an
 explicit decontamination exclusion with a decision ledger. No second global
 deduplication is allowed.
 
+Before packing, every selected document is also compared by exact UTF-8 text
+hash against all 13 frozen validation panels. Exact matches are excluded with
+a separate ledger and a zero-overlap post-scan. This preserves the old panels
+as genuine heldouts; it is not deduplication, and non-validation duplicates
+retain their original multiplicity.
+
 Planning arithmetic, pending the exact polytonic count and new contamination
 removals, is 25.548B active tokens and 6,092 updates. WSD-10 occupies the final
 20%; AdEMAMix alpha/beta3 ramps are scaled to the exact new horizon.
