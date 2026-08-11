@@ -18,6 +18,11 @@ randomized into one stationary stream; there is no academic-first curriculum.
 Foreign replay remains 20% and the inherited Greek source-family replay remains
 1% at every point.
 
+The exact `poly_train` file must be resolved from an already-existing
+repository, Hugging Face, or CSCS artifact and audited against the frozen split
+manifest before A can freeze. It must not be reconstructed or replaced by a
+different Ancient-Greek corpus; there is no remote-home dependency.
+
 The source is the public Apertus-standard anonymized dataset revision
 `987b8955fcd395c6219e39df9e64715457f69065`. The selected rows are scanned
 against the pinned GreekMMLU revision after anonymization. This scan is an

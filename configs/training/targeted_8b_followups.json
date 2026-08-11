@@ -47,7 +47,11 @@
       "existing_poly_train": {
         "passes": 1,
         "rows": 14929,
-        "exact_production_token_count": "pending"
+        "exact_production_token_count": "pending",
+        "artifact_authorities": ["repository", "huggingface", "cscs"],
+        "artifact_resolution": "existing_receipt_bound_artifact_only",
+        "reconstruction_allowed": false,
+        "source_substitution_allowed": false
       }
     },
     "ordering": "stationary_window_balanced_random_mixture",
