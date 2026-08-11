@@ -37,6 +37,24 @@ def main() -> int:
     require(b["remaining_non_hplt_active_tokens"] == 9_123_187_023, "B unseen mass drift")
     require(b["lr"]["load_optimizer_rng_and_sample_cursor"] is True, "B resume-state drift")
     require(b["planning_continuation_updates"] == 2754 and b["planning_final_absolute_update"] == 12290, "B geometry drift")
+    panel_execution = value["evaluation"]["initial_checkpoint_panel_execution"]
+    require(
+        panel_execution["panels"] == 13
+        and panel_execution["partition"] == "debug"
+        and panel_execution["nodes"] == 1
+        and panel_execution["gpus"] == 4
+        and panel_execution["groups"] == 4
+        and panel_execution["transactional_publication"] is True,
+        "initial panel execution drift",
+    )
+    nested = value["execution_authority"]["bundle_bound_nested_submission_proof"]
+    require(
+        nested["parent_partition"] == "debug"
+        and nested["child_partition"] == "debug"
+        and nested["nested_submit_flag"] == "--uenv-passthrough=ignore"
+        and nested["required_for_each_executing_bundle"] is True,
+        "nested submission proof drift",
+    )
     smoke = value["execution_authority"]["distributed_prelaunch_restart_smoke"]
     require(
         smoke["partition"] == "normal"

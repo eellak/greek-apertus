@@ -87,6 +87,14 @@
   },
   "evaluation": {
     "source_conditioned_interval_updates": 25,
+    "initial_checkpoint_panel_execution": {
+      "panels": 13,
+      "partition": "debug",
+      "nodes": 1,
+      "gpus": 4,
+      "groups": 4,
+      "transactional_publication": true
+    },
     "greekmmlu_metrics": [
       "zero_shot_accuracy",
       "choice_nll",
@@ -103,6 +111,12 @@
     "production_partition": "normal",
     "production_nodes": 16,
     "production_topology": "one_leaf_switch",
+    "bundle_bound_nested_submission_proof": {
+      "parent_partition": "debug",
+      "child_partition": "debug",
+      "nested_submit_flag": "--uenv-passthrough=ignore",
+      "required_for_each_executing_bundle": true
+    },
     "distributed_prelaunch_restart_smoke": {
       "partition": "normal",
       "nodes": 16,

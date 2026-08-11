@@ -53,6 +53,11 @@ Both arms keep the 13 content-clean source-conditioned panels and report
 GreekMMLU accuracy, choice NLL and correct-answer BPB. A evaluates GreekMMLU
 about every 2B tokens; B about every 1B.
 
+The initial 13-panel checkpoint evaluation runs in four sequential groups on
+one four-GPU `debug` node. It invokes the already proven per-group scorer and
+publishes the output tree only after all 13 receipts pass. This changes queue
+overhead, not panel identity, model geometry, tokenizer or metric arithmetic.
+
 Metadata, decontamination, packing control, receipts, lightweight smokes,
 conversion and evaluation control run on one-node Clariden `debug`
 allocations. One prelaunch test cannot fit there: after all debug-built assets
@@ -62,6 +67,12 @@ checkpoint, and one resumed update. The three trajectories share that
 allocation and execute four optimizer updates total. Logged loss and parameter
 norm must match exactly; the predeclared inherited DP32 gradient-norm bound is
 `atol=0.001`, `rtol=0.02`. Production remains blocked until this receipt passes.
+
+The nested scheduler proof is rebound to every executing immutable bundle. Its
+controller and child both run on `debug`; the controller runs inside the
+production uenv and submits its child with `--uenv-passthrough=ignore`, while
+the child verifies the same bundle and rank-local torchrun/Megatron runtime.
+This scheduler-control proof never consumes a `normal` allocation.
 
 Production training itself uses only the proven 16-node DP32 profile. DP64
 remains prohibited because it failed trajectory parity despite its speedup.
