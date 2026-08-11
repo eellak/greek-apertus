@@ -76,8 +76,11 @@
     "duplicate_policy": "audit_and_preserve_original_source_record_multiplicity"
   },
   "old_greek_replay_source": {
-    "definition": "document-level Nanochat-overlap audit pool",
-    "claim_boundary": "Overlap-classified replay source, not an exact original-consumed-document manifest.",
+    "machine_source_name": "greek_replay_apertus_original",
+    "legacy_machine_key": "old_greek_replay",
+    "display_name": "Greek source-family replay",
+    "definition": "Frozen Greek replay source dominated by Modern-Greek HPLT and FineWiki material.",
+    "claim_boundary": "Source-family replay, not an exact original-consumed-document manifest and not an Ancient-Greek capability claim.",
     "capacity_tokens": 2666110500,
     "selection_tokens": 807299391,
     "selected_without_replacement": true

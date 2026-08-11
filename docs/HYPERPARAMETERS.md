@@ -43,8 +43,11 @@ recomputed as `2/(1-β2)`.
 | Cooldown shape | `1-sqrt` |
 | Final | `5.5e-6` = 10% of peak |
 
-WSD-10 is the selected baseline for this full D0 run. A different 10–30%
-floor would be a separate LR experiment and must not be changed silently.
+WSD-10 is the frozen baseline for this full D0 run. The completed 8B sweep
+selected the `5.5e-5` peak while holding the 10% floor constant. A separate
+T10/T20/T30 tail experiment did not select a winner, so the 10% floor is not
+claimed as an independently sweep-selected optimum and must not be changed
+silently.
 
 ## Batch and parallelism
 
@@ -88,7 +91,9 @@ configuration:
 
 The run evaluates 13 source-conditioned panels every 25 updates: HPLT,
 non-HPLT, OpenArchives, Greek PhD, historical polytonic, English, German,
-Russian, Chinese, code, math, Old Greek and neutral external Modern Greek.
+Russian, Chinese, code, math, Greek source-family replay and neutral external
+Modern Greek. The legacy panel ID `old_greek` is retained for compatibility;
+it does not measure Ancient-Greek capability.
 Metrics include NLL, BPB and base-target versus added-target NLL.
 
 Native GreekMMLU is evaluated at initialization, after warmup, approximately

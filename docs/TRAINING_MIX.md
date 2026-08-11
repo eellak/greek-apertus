@@ -2,8 +2,9 @@
 
 The selected full-run arm is `D0_mixed`: HPLT and all eligible non-HPLT
 GlossAPI documents are randomized together in their natural post-exclusion
-proportions. Foreign replay remains 20% and Old-Greek replay remains 1% at all
-points. There is no internal GlossAPI curriculum.
+proportions. Foreign replay remains 20% and Greek source-family replay remains
+1% at all points. There is no internal GlossAPI curriculum. The machine key
+`old_greek_replay` is a legacy compatibility label, not a linguistic claim.
 
 The machine-readable authority is
 [`configs/training/data_mix.d0.json`](../configs/training/data_mix.d0.json).
@@ -15,7 +16,7 @@ The machine-readable authority is
 | HPLT Modern Greek | 44,042,201,419 | 54.554979% |
 | GlossAPI/non-HPLT Modern Greek | 19,734,450,444 | 24.445021% |
 | Foreign replay | 16,145,987,813 | 20.000000% |
-| Old-Greek replay | 807,299,391 | 1.000000% |
+| Greek source-family replay (`old_greek_replay`) | 807,299,391 | 1.000000% |
 | **Total** | **80,729,939,067** | **100%** |
 
 Within the 63,776,651,863-token Modern-Greek stream, HPLT is
@@ -54,16 +55,19 @@ Those are Apertus training source families. We do **not** claim that every
 selected document can be proven to have appeared in the exact hidden
 original-consumption manifest.
 
-Old-Greek replay is selected without replacement from the document-level
-Nanochat-overlap audit pool. This proves the overlap classification used by the
-project; it is not an exact original-consumed-document manifest either.
+Greek replay is selected without replacement from the frozen
+`greek_replay_apertus_original` source. Despite the legacy machine key
+`old_greek_replay`, this source is dominated by Modern-Greek HPLT and FineWiki
+material and must not be reported as an Ancient-Greek capability intervention.
+Its provenance is source-family evidence; it is not an exact manifest proving
+that every selected document was consumed by Apertus pretraining.
 
 Available capacities exceed the requested selections:
 
 | Pool | Capacity tokens | Selected tokens |
 |---|---:|---:|
 | Foreign replay | 45,299,005,175 | 16,145,987,813 |
-| Old-Greek replay | 2,666,110,500 | 807,299,391 |
+| Greek source-family replay (`old_greek_replay`) | 2,666,110,500 | 807,299,391 |
 
 Replay exact-content duplicates are measured and receipted but original
 source-record multiplicity is preserved. That policy avoids silently changing
