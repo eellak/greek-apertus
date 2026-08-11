@@ -72,6 +72,9 @@ checkpoint, and one resumed update. The three trajectories share that
 allocation and execute four optimizer updates total. Logged loss and parameter
 norm must match exactly; the predeclared inherited DP32 gradient-norm bound is
 `atol=0.001`, `rtol=0.02`. Production remains blocked until this receipt passes.
+For this bounded smoke, Slurm may choose any feasible leaf, but `--switches=1`
+remains mandatory and the completed receipts must prove single-leaf placement.
+This broadens scheduler placement without changing the DP32 training geometry.
 
 The nested scheduler proof is rebound to every executing immutable bundle. Its
 controller and child both run on `debug`; the controller runs inside the
