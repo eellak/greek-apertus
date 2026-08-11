@@ -40,7 +40,8 @@
         "training_tokens_pre_decontamination": 3881474423
       },
       "hplt": {
-        "selection": "deterministic_without_replacement",
+        "candidate_selection": "sha256_identity_modulo_quarter_seed_20260811",
+        "active_selection": "seeded_packed_catalog_prefix_without_replacement",
         "active_tokens": "exactly_equal_to_post_decontamination_openarchives_plus_greek_phd"
       },
       "existing_poly_train": {
@@ -57,7 +58,15 @@
       "ademamix_alpha_beta3_ramp": "scaled_to_exact_new_horizon"
     },
     "planning_updates": 6092,
-    "planning_normal_allocations": 2
+    "planning_normal_allocations": 2,
+    "allocation_handoff": {
+      "wall_limit_hours": 12,
+      "conservative_segment_hours": 10,
+      "reserve_minutes": 20,
+      "maximum_successor_hold_minutes": 100,
+      "source_trigger_minutes": 500,
+      "maximum_pending_successors": 1
+    }
   },
   "experiment_b": {
     "id": "B_iter9536_unseen_glossapi_wsd10",
@@ -89,6 +98,11 @@
   "execution_authority": {
     "repository": "fffoivos/train-apertus-with-glossapi",
     "subproject": "subprojects/08_targeted_8b_cpt_experiments",
-    "plan": "CPT_EXPERIMENT_AND_RESOURCE_PLAN_20260811.md"
+    "plan": "CPT_EXPERIMENT_AND_RESOURCE_PLAN_20260811.md",
+    "preparation_partition": "debug",
+    "production_partition": "normal",
+    "production_nodes": 16,
+    "production_topology": "one_leaf_switch",
+    "live_capacity_snapshot_required_before_submission": true
   }
 }

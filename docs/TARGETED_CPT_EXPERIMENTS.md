@@ -10,7 +10,10 @@ The receipt-producing implementation lives in
 
 The modern stream contains one pass over `openarchives.gr`, one pass over
 `greek_phd`, the same post-decontamination number of active HPLT tokens, and one
-pass over the existing 14,929-document `poly_train` split. These sources are
+pass over the existing 14,929-document `poly_train` split. HPLT first uses a
+deterministic SHA-256 identity quarter as a capacity pool; after exclusions and
+packing, the frozen seeded catalog prefix is cut to exactly the academic active
+token total. These sources are
 randomized into one stationary stream; there is no academic-first curriculum.
 Foreign replay remains 20% and the inherited Greek source-family replay remains
 1% at every point.
@@ -54,3 +57,9 @@ Metadata, decontamination, packing control, receipts, smokes, conversion and
 evaluation control run on one-node Clariden `debug` allocations. Training uses
 only the proven 16-node DP32 profile. DP64 remains prohibited because it failed
 trajectory parity despite its speedup.
+
+For A, only one successor may be pending. With a conservative 10-hour segment,
+20-minute reserve and 12-hour allocation, the maximum harmless hold is 100
+minutes and the request trigger is 500 minutes after the source segment starts.
+A fresh live capacity and leaf-switch snapshot is mandatory before each normal
+submission.
