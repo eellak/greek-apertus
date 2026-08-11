@@ -1,0 +1,50 @@
+# Targeted 8B follow-up experiments
+
+Two follow-ups are being prepared after the complete stationary 8B CPT run.
+Their portable machine contract is
+[`targeted_8b_followups.json`](../configs/training/targeted_8b_followups.json).
+The receipt-producing implementation lives in
+`fffoivos/train-apertus-with-glossapi/subprojects/08_targeted_8b_cpt_experiments`.
+
+## A: academic, HPLT and polytonic mixture
+
+The modern stream contains one pass over `openarchives.gr`, one pass over
+`greek_phd`, the same post-decontamination number of active HPLT tokens, and one
+pass over the existing 14,929-document `poly_train` split. These sources are
+randomized into one stationary stream; there is no academic-first curriculum.
+Foreign replay remains 20% and the inherited Greek source-family replay remains
+1% at every point.
+
+The source is the public Apertus-standard anonymized dataset revision
+`987b8955fcd395c6219e39df9e64715457f69065`. The selected rows are scanned
+against the pinned GreekMMLU revision after anonymization. This scan is an
+explicit decontamination exclusion with a decision ledger. No second global
+deduplication is allowed.
+
+Planning arithmetic, pending the exact polytonic count and new contamination
+removals, is 25.548B active tokens and 6,092 updates. WSD-10 occupies the final
+20%; AdEMAMix alpha/beta3 ramps are scaled to the exact new horizon.
+
+## B: continue the best checkpoint
+
+This arm resumes the exact optimizer/model/RNG state at parent update 9,536.
+It consumes every non-HPLT packed sequence in the unconsumed suffix of the
+parent D0 schedule and adds only replay sequences that also occur after that
+prefix. “Unseen” therefore means unseen packed token spans; a long document may
+have had an earlier span consumed.
+
+The remaining non-HPLT mass is 9,123,187,023 active tokens. WSD-10 starts
+immediately and decays over the full continuation. Optimizer warmup and
+AdEMAMix ramps are not restarted or rescaled. Planning geometry is 2,754
+updates, ending at absolute update 12,290.
+
+## Evaluation and resources
+
+Both arms keep the 13 content-clean source-conditioned panels and report
+GreekMMLU accuracy, choice NLL and correct-answer BPB. A evaluates GreekMMLU
+about every 2B tokens; B about every 1B.
+
+Metadata, decontamination, packing control, receipts, smokes, conversion and
+evaluation control run on one-node Clariden `debug` allocations. Training uses
+only the proven 16-node DP32 profile. DP64 remains prohibited because it failed
+trajectory parity despite its speedup.

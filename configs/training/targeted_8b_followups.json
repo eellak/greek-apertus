@@ -1,0 +1,86 @@
+{
+  "schema_version": "greek_apertus_targeted_8b_followups_v1",
+  "status": "preparation_in_progress_not_launch_authorized",
+  "source_release": {
+    "repo_id": "fffoivos/glossapi-greek-nanochat-pretraining-dataset-v2",
+    "revision": "987b8955fcd395c6219e39df9e64715457f69065",
+    "anonymized_to_apertus_standard": true,
+    "additional_global_deduplication": false,
+    "greekmmlu_decontamination_required_after_anonymization": true
+  },
+  "shared_scientific_contract": {
+    "tokenizer": "configs/tokenizer/extension.json",
+    "initialization": "configs/initialization/token_distillation_8b.json",
+    "base_recipe": "configs/training/full_8b_mixed_cpt.json",
+    "modern_foreign_old_greek_mix": [79, 20, 1],
+    "checkpoint_averaging": false,
+    "execution_profile": "dp32_16node",
+    "dp64_allowed": false
+  },
+  "experiment_a": {
+    "id": "A_academic_hplt_poly_stationary_79_20_1",
+    "priority": 1,
+    "modern_stream": {
+      "openarchives_gr": {
+        "passes": 1,
+        "rows_pre_decontamination": 126597,
+        "training_tokens_pre_decontamination": 6132237924
+      },
+      "greek_phd": {
+        "passes": 1,
+        "rows_pre_decontamination": 31692,
+        "training_tokens_pre_decontamination": 3881474423
+      },
+      "hplt": {
+        "selection": "deterministic_without_replacement",
+        "active_tokens": "exactly_equal_to_post_decontamination_openarchives_plus_greek_phd"
+      },
+      "existing_poly_train": {
+        "passes": 1,
+        "rows": 14929,
+        "exact_production_token_count": "pending"
+      }
+    },
+    "ordering": "stationary_window_balanced_random_mixture",
+    "lr": {
+      "schedule": "WSD-10",
+      "cooldown": "final_20_percent",
+      "warmup_updates": 400,
+      "ademamix_alpha_beta3_ramp": "scaled_to_exact_new_horizon"
+    },
+    "planning_updates": 6092,
+    "planning_normal_allocations": 2
+  },
+  "experiment_b": {
+    "id": "B_iter9536_unseen_glossapi_wsd10",
+    "priority": 2,
+    "parent_checkpoint_update": 9536,
+    "remaining_non_hplt_active_tokens": 9123187023,
+    "selection": "all_parent_schedule_suffix_non_hplt_sequences_plus_only_unseen_replay_sequences",
+    "ordering": "stationary_window_balanced_random_mixture",
+    "lr": {
+      "schedule": "WSD-10_over_entire_continuation",
+      "restart_warmup": false,
+      "rescale_ademamix_ramps": false,
+      "load_optimizer_rng_and_sample_cursor": true
+    },
+    "planning_continuation_updates": 2754,
+    "planning_final_absolute_update": 12290,
+    "planning_normal_allocations": 1
+  },
+  "evaluation": {
+    "source_conditioned_interval_updates": 25,
+    "greekmmlu_metrics": [
+      "zero_shot_accuracy",
+      "choice_nll",
+      "correct_answer_bpb"
+    ],
+    "experiment_a_greekmmlu_cadence_tokens": 2000000000,
+    "experiment_b_greekmmlu_cadence_tokens": 1000000000
+  },
+  "execution_authority": {
+    "repository": "fffoivos/train-apertus-with-glossapi",
+    "subproject": "subprojects/08_targeted_8b_cpt_experiments",
+    "plan": "CPT_EXPERIMENT_AND_RESOURCE_PLAN_20260811.md"
+  }
+}

@@ -16,11 +16,13 @@ eligible GlossAPI Greek corpus with controlled replay.
 | Training settings | Frozen for the D0 full run, including corrected RoPE, AdEMAMix, WSD-10, Goldfish, batch/parallelism and NaN/Inf checks. | [`full_8b_mixed_cpt.json`](configs/training/full_8b_mixed_cpt.json) |
 | Evaluation | 13 source-conditioned panels, native GreekMMLU at 20 milestones, and per-document validation at initialization/cooldown/final are specified. | [`HYPERPARAMETERS.md`](docs/HYPERPARAMETERS.md) |
 | Production launch | **Owner-authorized, technical gates pending.** D0 point-estimate acceptance and the `libduth` risk decision are recorded. Data receipts, the DP32/DP64 benchmark, initial evaluations, smokes, storage and scheduler gates must still pass. | [`owner_decisions_20260805.json`](configs/training/owner_decisions_20260805.json) |
+| Targeted follow-ups | Preparing an academic/HPLT/polytonic stationary run and a best-checkpoint continuation over unseen non-HPLT sequence spans. Both use the anonymized HF revision, explicit GreekMMLU decontamination and DP32 only. | [`targeted_8b_followups.json`](configs/training/targeted_8b_followups.json) |
 
 The portable contract is validated by:
 
 ```bash
 python3 scripts/validate_full_8b_contract.py
+python3 scripts/validate_targeted_followups.py
 ```
 
 ## Important execution boundary
@@ -42,6 +44,7 @@ substitute for the exact D0 schedule reader.
 - [`provenance.json`](configs/training/provenance.json) — field-by-field inherited, experimentally selected and derived settings.
 - [`MODEL_BRIDGE.md`](docs/MODEL_BRIDGE.md) — HF/Megatron conversion fidelity.
 - [`TRAINING.md`](docs/TRAINING.md) — execution boundary and launch gates.
+- [`TARGETED_CPT_EXPERIMENTS.md`](docs/TARGETED_CPT_EXPERIMENTS.md) — the two follow-up mixes, LR behavior, evaluation cadence and resource boundary.
 
 ## License
 
