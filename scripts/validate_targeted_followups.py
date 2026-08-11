@@ -37,6 +37,22 @@ def main() -> int:
     require(b["remaining_non_hplt_active_tokens"] == 9_123_187_023, "B unseen mass drift")
     require(b["lr"]["load_optimizer_rng_and_sample_cursor"] is True, "B resume-state drift")
     require(b["planning_continuation_updates"] == 2754 and b["planning_final_absolute_update"] == 12290, "B geometry drift")
+    smoke = value["execution_authority"]["distributed_prelaunch_restart_smoke"]
+    require(
+        smoke["partition"] == "normal"
+        and smoke["nodes"] == 16
+        and smoke["one_leaf_switch"] is True
+        and smoke["wall_limit_minutes"] == 60
+        and smoke["allocations_per_experiment"] == 1
+        and smoke["optimizer_updates_executed"] == 4,
+        "distributed restart-smoke allocation drift",
+    )
+    require(
+        smoke["loss_and_parameter_norm_exact"] is True
+        and smoke["gradient_norm_atol"] == 0.001
+        and smoke["gradient_norm_rtol"] == 0.02,
+        "restart-parity thresholds drift",
+    )
     print(json.dumps({"ok": True, "experiments": [a["id"], b["id"]], "launch_ready": False}, indent=2))
     return 0
 

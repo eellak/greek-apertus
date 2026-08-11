@@ -103,6 +103,20 @@
     "production_partition": "normal",
     "production_nodes": 16,
     "production_topology": "one_leaf_switch",
+    "distributed_prelaunch_restart_smoke": {
+      "partition": "normal",
+      "nodes": 16,
+      "one_leaf_switch": true,
+      "wall_limit_minutes": 60,
+      "allocations_per_experiment": 1,
+      "optimizer_updates_executed": 4,
+      "trajectory": "two_uninterrupted_vs_one_checkpointed_plus_one_resumed",
+      "submit_only_after_debug_assets_are_frozen": true,
+      "production_launch_remains_blocked_until_passed": true,
+      "loss_and_parameter_norm_exact": true,
+      "gradient_norm_atol": 0.001,
+      "gradient_norm_rtol": 0.02
+    },
     "live_capacity_snapshot_required_before_submission": true
   }
 }

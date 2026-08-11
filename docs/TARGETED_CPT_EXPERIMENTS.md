@@ -53,10 +53,18 @@ Both arms keep the 13 content-clean source-conditioned panels and report
 GreekMMLU accuracy, choice NLL and correct-answer BPB. A evaluates GreekMMLU
 about every 2B tokens; B about every 1B.
 
-Metadata, decontamination, packing control, receipts, smokes, conversion and
-evaluation control run on one-node Clariden `debug` allocations. Training uses
-only the proven 16-node DP32 profile. DP64 remains prohibited because it failed
-trajectory parity despite its speedup.
+Metadata, decontamination, packing control, receipts, lightweight smokes,
+conversion and evaluation control run on one-node Clariden `debug`
+allocations. One prelaunch test cannot fit there: after all debug-built assets
+are frozen, each arm uses one bounded 16-node, one-leaf `normal` allocation to
+compare two uninterrupted DP32 updates with one update, a synchronous
+checkpoint, and one resumed update. The three trajectories share that
+allocation and execute four optimizer updates total. Logged loss and parameter
+norm must match exactly; the predeclared inherited DP32 gradient-norm bound is
+`atol=0.001`, `rtol=0.02`. Production remains blocked until this receipt passes.
+
+Production training itself uses only the proven 16-node DP32 profile. DP64
+remains prohibited because it failed trajectory parity despite its speedup.
 
 For A, only one successor may be pending. With a conservative 10-hour segment,
 20-minute reserve and 12-hour allocation, the maximum harmless hold is 100
