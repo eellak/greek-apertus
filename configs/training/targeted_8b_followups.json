@@ -50,6 +50,13 @@
         "exact_production_token_count": "pending",
         "artifact_authorities": ["repository", "huggingface", "cscs"],
         "artifact_resolution": "existing_receipt_bound_artifact_only",
+        "resolution_status": "blocked_no_existing_artifact_located_in_permitted_authorities",
+        "search_scope": [
+          "local_repository",
+          "authenticated_huggingface_inventory",
+          "cscs_physical_files_and_valid_symlinks"
+        ],
+        "remote_home_dependency_allowed": false,
         "reconstruction_allowed": false,
         "source_substitution_allowed": false
       }
